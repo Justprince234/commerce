@@ -1,5 +1,4 @@
 from datetime import date
-from typing_extensions import Required
 from django.db import models
 from accounts.models import User
 from django_countries.fields import CountryField
@@ -125,7 +124,7 @@ class MembershipForm(models.Model):
     last_name = models.CharField(max_length=50)
     gender = models.CharField(choices=SEX,default="G", max_length=1)
     date_of_birth = models.DateField()
-    phone_number = models.CharField(max_length=50, Required=False)
+    phone_number = models.CharField(max_length=50, blank=True, default='')
     mobile_number = models.CharField(max_length=50)
     postal_code = models.CharField(max_length=10)
     city = models.CharField(max_length=50)
