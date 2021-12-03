@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm
+from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact
 
 from rest_framework.fields import CurrentUserDefault
 
@@ -65,4 +65,9 @@ class PaymentSerializer(serializers.ModelSerializer):
 class MembershipFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = MembershipForm
+        fields = '__all__'
+
+class ContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contact
         fields = '__all__'

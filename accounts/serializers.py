@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from accounts.models import User, Contact
+from accounts.models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
@@ -58,8 +58,3 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'first_name', 'middle_name', 'surname', 'email', 'phone')
 
-
-class ContactSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Contact
-        fields = '__all__'

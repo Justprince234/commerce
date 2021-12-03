@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, Contact
+from .models import User
 
 
 
@@ -37,13 +37,3 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(User, UserAdmin)
-
-
-class ContactAdmin(admin.ModelAdmin):
-    
-    list_display = ('id', 'name', 'email', 'query')
-    list_display_links = ('id', 'name')
-    search_fields = ('name',)
-    list_per_page = 25
-
-admin.site.register(Contact, ContactAdmin)

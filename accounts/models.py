@@ -65,13 +65,3 @@ class User(AbstractBaseUser, PermissionsMixin):
         return "/users/%i/" % (self.pk)
     def get_email(self):
         return self.email
-
-
-class Contact(models.Model):
-
-    name = models.CharField(max_length=200)
-    email = models.EmailField()
-    query = models.TextField()
-
-    class Meta:
-        verbose_name_plural = "Contact Us"

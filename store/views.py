@@ -5,8 +5,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 
-from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm
-from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer
+from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact
+from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -237,3 +237,7 @@ def checkout_api_view(request):
 class MembershipFormList(generics.ListCreateAPIView):
     queryset = MembershipForm.objects.all()
     serializer_class = MembershipFormSerializer
+
+class ContactList(generics.ListCreateAPIView):
+    queryset = Contact.objects.all()
+    serializer_class = ContactSerializer

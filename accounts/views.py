@@ -5,9 +5,9 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from knox.models import AuthToken
 from knox.auth import TokenAuthentication
-from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, ContactSerializer
+from .serializers import UserSerializer, RegisterSerializer, LoginSerializer
 from rest_framework.permissions import IsAuthenticated
-from .models import User, Contact
+from .models import User
 from rest_framework import permissions
 from django.conf import settings
 from django.contrib.auth import login
@@ -58,8 +58,3 @@ class UserAPI(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
-
-
-class ContactList(generics.ListCreateAPIView):
-    queryset = Contact.objects.all()
-    serializer_class = ContactSerializer
