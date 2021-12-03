@@ -18,6 +18,9 @@ class Category(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True)
 
+    class Meta:
+        verbose_name_plural = "Categories"
+
     def __str__(self):
         return self.name
 
@@ -37,9 +40,6 @@ class Product(models.Model):
     description = models.TextField()
     price = models.FloatField()
     membership_price = models.FloatField(blank=True, null=True)
-
-    class Meta:
-        verbose_name_plural = "Categories"
 
     def __str__(self):
         return self.name
