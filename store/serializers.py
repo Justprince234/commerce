@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment
+from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm
 
 from rest_framework.fields import CurrentUserDefault
 
@@ -61,3 +61,8 @@ class PaymentSerializer(serializers.ModelSerializer):
         """Include default for read_only `account` field"""
         kwargs["owner"] = self.fields["owner"].get_default()
         return super().save(**kwargs)
+
+class MembershipFormSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MembershipForm
+        fields = '__all__'

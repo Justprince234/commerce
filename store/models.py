@@ -1,4 +1,5 @@
 from datetime import date
+from typing_extensions import Required
 from django.db import models
 from accounts.models import User
 from django_countries.fields import CountryField
@@ -6,6 +7,12 @@ from django.urls import reverse
 from  django.conf import settings
 
 # Create your models here.
+
+SEX = (
+    ('G', 'Select gender'),
+    ('M', 'Male'),
+    ('F', 'Female'),
+)
 
 class Category(models.Model):
     """Creates a database instance of Category in database."""
@@ -32,18 +39,14 @@ class Product(models.Model):
     price = models.FloatField()
     membership_price = models.FloatField(blank=True, null=True)
 
+    class Meta:
+        verbose_name_plural = "Categories"
+
     def __str__(self):
         return self.name
 
     def get_absolute_url(self):
         return f'/{self.category.slug}/{self.slug}/'
-        
-    def get_add_to_cart_url(self):
-        return reverse('store:add-to-cart', kwargs={'slug':self.slug})
-
-    def get_remove_from_cart_url(self):
-        return reverse('store:remove-from-cart', kwargs={'slug':self.slug})
-
 
 
 class OrderProduct(models.Model):
@@ -115,3 +118,18 @@ class Payment(models.Model):
     def __str__(self):
         return self.owner.first_name
     
+class MembershipForm(models.Model):
+    country = CountryField(multiple=False, blank_label='(select country)')
+    email = models.EmailField(verbose_name='email', max_length=60, unique=True)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    gender = models.CharField(choices=SEX,default="G", max_length=1)
+    date_of_birth = models.DateField()
+    phone_number = models.CharField(max_length=50, Required=False)
+    mobile_number = models.CharField(max_length=50)
+    postal_code = models.CharField(max_length=10)
+    city = models.CharField(max_length=50)
+    state = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.first_name

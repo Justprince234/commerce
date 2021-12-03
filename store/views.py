@@ -5,8 +5,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 
-from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment
-from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer
+from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm
+from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -41,7 +41,7 @@ class CategoryDetail(APIView):
     def get_object_or_404(self, category_slug):
         try:
             return Category.objects.get(slug=category_slug)
-        except Product.DoesNotExist:
+        except Category.DoesNotExist:
             return Http404
 
     def get(self, request, category_slug, format=None):
@@ -233,3 +233,7 @@ def checkout_api_view(request):
             return JsonResponse(serializer.data,status = 201)
         return JsonResponse(serializer.errors,status = 400)
 
+
+class MembershipFormList(generics.ListCreateAPIView):
+    queryset = MembershipForm.objects.all()
+    serializer_class = MembershipFormSerializer

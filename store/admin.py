@@ -6,7 +6,8 @@ from .models import (
     OrderProduct, 
     Order,
     CheckoutAddress,
-    Payment
+    Payment,
+    MembershipForm
 )
 
 admin.site.site_header = 'Direshop777'
@@ -68,3 +69,12 @@ class PaymentAdmin(admin.ModelAdmin):
     list_per_page = 25
 
 admin.site.register(Payment, PaymentAdmin)
+
+class MembershipFormAdmin(admin.ModelAdmin):
+    
+    list_display = ('id', 'email', 'first_name', 'last_name', 'mobile_number')
+    list_display_links = ('id', 'email')
+    search_fields = ('email',)
+    list_per_page = 25
+
+admin.site.register(MembershipForm, MembershipFormAdmin)
