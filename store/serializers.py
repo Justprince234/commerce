@@ -5,15 +5,16 @@ from rest_framework.fields import CurrentUserDefault
 
 
 # Product Serializer
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = '__all__'
-
-# Product Serializer
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
+        fields = '__all__'
+
+# Category Serializer
+class CategorySerializer(serializers.ModelSerializer):
+    products = ProductSerializer(many=True)
+    class Meta:
+        model = Category
         fields = '__all__'
 
 
