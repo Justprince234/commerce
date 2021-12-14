@@ -10,12 +10,16 @@ from store.serializers import CategorySerializer, ProductSerializer, OrderProduc
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status, authentication, permissions
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser
 from django.http import HttpResponse,JsonResponse
-from rest_framework.pagination import PageNumberPagination
+
+# import paypalrestsdk
+# import logging
 
 # Create your views here.
 class ListProductApi(APIView):
@@ -60,8 +64,9 @@ def search(request):
 
     else:
         return Response({'products': []})
+
 # Add to cart
-@api_view(['GET','POST'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_to_cart(request, slug):
     product = get_object_or_404(Product, slug=slug )
@@ -78,21 +83,18 @@ def add_to_cart(request, slug):
         if order.products.filter(product__slug=product.slug).exists():
             order_item.quantity += 1
             order_item.save()
-            messages.info(request, f"{product.name} quantity has updated.")
-            return redirect("store:order-summary")
+            return messages.info(request, f"{product.name} quantity has updated.")
         else:
             order.products.add(order_item)
-            messages.info(request, f"{product.name} has added to your cart.")
-            return redirect("store:order-summary")
+            return messages.info(request, f"{product.name} has added to your cart.")
     else:
         ordered_date = timezone.now()
         order = Order.objects.create(user=request.user, ordered_date=ordered_date)
         order.products.add(order_item)
-        messages.info(request, f"{product.name} has added to your cart")
-        return redirect("store:order-summary")
+        return messages.info(request, f"{product.name} has added to your cart")
 
 # Remove from cart.
-@api_view(['GET','POST'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def remove_from_cart(request, slug):
     product = get_object_or_404(Product, slug=slug )
@@ -109,18 +111,16 @@ def remove_from_cart(request, slug):
                 ordered=False
             )[0]
             order_item.delete()
-            messages.info(request, f"{product.name} has been removed from your cart")
-            return redirect("store:order-summary")
+            return messages.info(request, f"{product.name} has been removed from your cart")
         else:
-            messages.info(request, f"{product.name} not in your cart")
-            return redirect("store:product", slug=slug)
+
+            return messages.info(request, f"{product.name} not in your cart")
     else:
         #add message doesnt have order
-        messages.info(request, "You do not have an Order")
-        return redirect("store:product", slug = slug)
+        return messages.info(request, "You do not have an Order")
 
 # Remove item from cart
-@api_view(['GET','POST'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def reduce_quantity_item(request, slug):
     product = get_object_or_404(Product, slug=slug )
@@ -141,35 +141,21 @@ def reduce_quantity_item(request, slug):
                 order_item.save()
             else:
                 order_item.delete()
-            messages.info(request, f"{product.name} quantity has updated")
-            return redirect("store:order-summary")
+            return messages.info(request, f"{product.name} quantity has updated")
         else:
-            messages.info(request, f"{product.name} not in your cart")
-            return redirect("store:order-summary")
+            return messages.info(request, f"{product.name} not in your cart")
     else:
         #add message doesn't have order
-        messages.info(request, "You do not have an active order")
-        return redirect("store:order-summary")
+        return messages.info(request, "You do not have an active order")
 
+class OrdersList(APIView):
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
 
-@api_view(['GET','POST'])
-@permission_classes([IsAuthenticated])
-def orderitem_api_view(request):
-    
-    if request.method == 'GET':
-        products = OrderProduct.objects.filter(owner=request.user,)
-        serializer = OrderProductSerializer(products, many=True)
-        return JsonResponse(serializer.data, safe =False)
-    
-    elif request.method == 'POST':
-        owner = request.user
-        data = JSONParser().parse(request)
-        serializer = OrderProductSerializer(data = data)
- 
-        if serializer.is_valid():
-            serializer.save(owner)
-            return JsonResponse(serializer.data,status = 201)
-        return JsonResponse(serializer.errors,status = 400)
+    def get(self, request, format=None):
+        orders = Order.objects.filter(user=request.user)
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
 
 
 @api_view(['GET','POST'])
@@ -191,47 +177,88 @@ def CheckoutAddress_api_view(request):
             return JsonResponse(serializer.data,status = 201)
         return JsonResponse(serializer.errors,status = 400)
 
+# @api_view(['POST'])
+# @authentication_classes([authentication.TokenAuthentication])
+# @permission_classes([permissions.IsAuthenticated])
+# def checkout(request):
+#     serializer = OrderSerializer(data=request.data)
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def ordersummary_api_view(request):
+#     if serializer.is_valid():
+
+#         paid_amount = sum(item.get('quantity') * item.get('product').price for item in serializer.validated_data['productss'])
+#         payment = paypalrestsdk.Payment({
+
+#             "intent": "sale",
+#             "payer": {
+#                 "payment_method": "paypal"},
+#             "redirect_urls": {
+#                 "return_url": "http://localhost:3000/payment/execute",
+#                 "cancel_url": "http://localhost:3000/"},
+#             "transactions": [{
+#                 "item_list": {
+#                     "items": [{
+#                         "name": serializer.validated_data['products'],
+#                         "sku": serializer.validated_data['product'],
+#                         "price": serializer.validated_data['price'],
+#                         "currency": "USD",
+#                         "quantity": serializer.validated_data['quantity']}]},
+#                 "amount": {
+#                     "total": paid_amount,
+#                     "currency": "USD"},
+#                 "description": "This is the payment transaction description."}]})
+
+#         if payment.create():
+#             print("Payment created successfully")
+#         else:
+#             print(payment.error)
+
+#         try:
+#             charge = stripe.Charge.create(
+#                 amount=int(paid_amount * 100),
+#                 currency='USD',
+#                 description='Charge from Djackets',
+#                 source=serializer.validated_data['stripe_token']
+#             )
+
+#             serializer.save(user=request.user, paid_amount=paid_amount)
+
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         except Exception:
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    if request.method == 'GET':
-        items = Order.objects.filter(owner=request.user, ordered=False)
-        serializer = OrderSerializer(items, many=True)
-        return JsonResponse(serializer.data, safe =False)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def checkout_api_view(request):
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def checkout_api_view(request):
 
-    if request.method == 'GET':
-        items = Order.objects.filter(owner=request.user, ordered=False)
-        serializer = OrderSerializer(items, many=True)
-        return JsonResponse(serializer.data, safe =False)
+#     if request.method == 'GET':
+#         items = Order.objects.filter(owner=request.user, ordered=False)
+#         serializer = OrderSerializer(items, many=True)
+#         return JsonResponse(serializer.data, safe =False)
     
-    elif request.method == 'POST':
-        items = Order.objects.filter(owner=request.user, ordered=False)
-        serializer = OrderSerializer(items, many=True)
-        owner = request.user
-        checkout_address = CheckoutAddress(
-            user=request.user,
-            street_address=serializer.validated_data['street_address'],
-            apartment_address=serializer.validated_data['apartment_address'],
-            country=serializer.validated_data['country'],
-            zip=serializer.validated_data['zip']
-        )
-        checkout_address.save()
-        items.checkout_address = checkout_address
-        items.save()
-        data = JSONParser().parse(request)
-        serializer =OrderSerializer(data = data)
+#     elif request.method == 'POST':
+#         items = Order.objects.filter(owner=request.user, ordered=False)
+#         serializer = OrderSerializer(items, many=True)
+#         owner = request.user
+#         checkout_address = CheckoutAddress(
+#             user=request.user,
+#             street_address=serializer.validated_data['street_address'],
+#             apartment_address=serializer.validated_data['apartment_address'],
+#             country=serializer.validated_data['country'],
+#             zip=serializer.validated_data['zip']
+#         )
+#         checkout_address.save()
+#         items.checkout_address = checkout_address
+#         items.save()
+#         data = JSONParser().parse(request)
+#         serializer =OrderSerializer(data = data)
  
-        if serializer.is_valid():
-            serializer.save(owner)
-            return JsonResponse(serializer.data,status = 201)
-        return JsonResponse(serializer.errors,status = 400)
+#         if serializer.is_valid():
+#             serializer.save(owner)
+#             return JsonResponse(serializer.data,status = 201)
+#         return JsonResponse(serializer.errors,status = 400)
 
 
 class MembershipFormList(generics.ListCreateAPIView):

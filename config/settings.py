@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import cloudinary
 import cloudinary_storage
 
+import paypalrestsdk
+
 import environ
 import os
 
@@ -124,6 +126,11 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': env('API_SECRET'),
 }
 
+# paypalrestsdk.configure({
+    
+#     "mode": env("PAYPAL_MODE"),
+#     "client_id": env("PAYPAL_CLIENT_ID"),
+#     "client_secret": env("PAYPAL_CLIENT_SECRET")})
 
 
 # Password validation

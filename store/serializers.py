@@ -17,9 +17,24 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+# Checkout Address Serializer
+class CheckoutAddressSerializer(serializers.ModelSerializer):
+    owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    class Meta:
+        model = CheckoutAddress
+        fields = '__all__'
+
+    def save(self, **kwargs):
+        """Include default for read_only `account` field"""
+        kwargs["owner"] = self.fields["owner"].get_default()
+        return super().save(**kwargs)
+
 
 class OrderProductSerializer(serializers.ModelSerializer):
     owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    product =  ProductSerializer()
+    get_final_price = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = OrderProduct
         fields = '__all__'
@@ -30,21 +45,20 @@ class OrderProductSerializer(serializers.ModelSerializer):
         return super().save(**kwargs)
 
 class OrderSerializer(serializers.ModelSerializer):
+    products =  OrderProductSerializer(many=True)
     owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     class Meta:
         model = Order
         fields = '__all__'
 
-    def save(self, **kwargs):
-        """Include default for read_only `account` field"""
-        kwargs["owner"] = self.fields["owner"].get_default()
-        return super().save(**kwargs)
+    def create(self, validated_data):
+        items_data = validated_data.pop('products')
+        order = OrderProduct.objects.create(**validated_data)
 
-class CheckoutAddressSerializer(serializers.ModelSerializer):
-    owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
-    class Meta:
-        model = CheckoutAddress
-        fields = '__all__'
+        for item_data in items_data:
+            Order.objects.create(order=order, **item_data)
+            
+        return order
 
     def save(self, **kwargs):
         """Include default for read_only `account` field"""
