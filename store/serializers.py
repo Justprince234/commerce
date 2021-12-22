@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact
 
 from rest_framework.fields import CurrentUserDefault
+from django_countries.serializer_fields import CountryField
 
 
 # Product Serializer
@@ -20,6 +21,7 @@ class CategorySerializer(serializers.ModelSerializer):
 # Checkout Address Serializer
 class CheckoutAddressSerializer(serializers.ModelSerializer):
     owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    country = CountryField()
     class Meta:
         model = CheckoutAddress
         fields = '__all__'
@@ -33,11 +35,22 @@ class CheckoutAddressSerializer(serializers.ModelSerializer):
 class OrderProductSerializer(serializers.ModelSerializer):
     owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     product =  ProductSerializer()
+    get_total_product_price = serializers.IntegerField(read_only=True)
     get_final_price = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = OrderProduct
         fields = '__all__'
+
+    def get_product(self, obj):
+        return ProductSerializer(obj.product).data
+
+    def get_total_product_price(self, obj):
+        return obj.get_total_product_price()
+
+    def get_final_price(self, obj):
+        return obj.get_final_price()
+
 
     def save(self, **kwargs):
         """Include default for read_only `account` field"""
@@ -51,14 +64,11 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = '__all__'
 
-    def create(self, validated_data):
-        items_data = validated_data.pop('products')
-        order = OrderProduct.objects.create(**validated_data)
+    def get_order_items(self, obj):
+        return OrderProductSerializer(obj.products.all(), many=True).data
 
-        for item_data in items_data:
-            Order.objects.create(order=order, **item_data)
-            
-        return order
+    def get_total_price(self, obj):
+        return obj.get_total_price()
 
     def save(self, **kwargs):
         """Include default for read_only `account` field"""

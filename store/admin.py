@@ -8,7 +8,8 @@ from .models import (
     CheckoutAddress,
     Payment,
     MembershipForm,
-    Contact
+    Contact,
+    UserProfile,
 )
 
 admin.site.site_header = 'Direshop777'
@@ -88,3 +89,5 @@ class ContactAdmin(admin.ModelAdmin):
     list_per_page = 25
 
 admin.site.register(Contact, ContactAdmin)
+
+admin.site.register(UserProfile)
