@@ -17,7 +17,7 @@ SEX = (
 class UserProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    paypal_customer_id = models.CharField(max_length=100, blank=True, null=True)
+    stripe_customer_id = models.CharField(max_length=100, blank=True, null=True)
     one_click_purchasing = models.BooleanField(default=False)
 
     def __str__(self):

@@ -44,7 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Custom user class inheriting AbstractBaseUser class."""
     
     first_name = models.CharField(max_length=50)
-    middle_name = models.CharField(max_length=50)
+    middle_name = models.CharField(max_length=50, blank=True, null=True)
     surname = models.CharField(max_length=50)
     email = models.EmailField(verbose_name='email', max_length=60, unique=True)
     sex = models.CharField(choices=SEX,default="G", max_length=1)
