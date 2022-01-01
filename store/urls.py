@@ -1,9 +1,6 @@
 from django.urls import path
 from store import views
 from .views import (
-    remove_from_cart,
-    reduce_quantity_item,
-    add_to_cart,
     CountryListView,
     CheckoutAddressListView,
     CheckoutAddressCreateView,
@@ -12,6 +9,12 @@ from .views import (
     OrderDetailView,
     OrderItemDeleteView,
     PaymentListView,
+    PaymentView,
+    StripeConfigView,
+    AddToCartView,
+    OrderQuantityUpdateView,
+    UserIDView,
+    AddCouponView,
 )
 
 app_name = 'store'
@@ -31,13 +34,14 @@ urlpatterns = [
     path('order-summary/', OrderDetailView.as_view(), name='order-summary'),
     path('order-items/<pk>/delete/',
         OrderItemDeleteView.as_view(), name='order-item-delete'),
-    # path('order-item/update-quantity/',
-    #     OrderQuantityUpdateView.as_view(), name='order-item-update-quantity'),
-    # path('orders/', views.OrdersList.as_view()),
+    path('update-quantity/',
+        OrderQuantityUpdateView.as_view(), name='order-item-update-quantity'),
+    path('stripe-config/', StripeConfigView.as_view(), name='stripe-config'),
+    path('checkout/', PaymentView.as_view(), name='checkout'),
     path('payments/', PaymentListView.as_view(), name='payment-list'),
     path('membershipform/', views.MembershipFormList.as_view()),
     path('contactlist/', views.ContactList.as_view()),
-    path('add-to-cart/<slug:slug>/', add_to_cart, name='add-to-cart'),
-    path('remove-from-cart/<slug:slug>/', remove_from_cart, name='remove-from-cart'),
-    path('reduce-quantity-item/<slug:slug>/', reduce_quantity_item, name='reduce-quantity-item'),
+    path('add-to-cart/', AddToCartView.as_view(), name='add-to-cart'),
+    path('user-id/', UserIDView.as_view(), name='user-id'),
+    path('add-coupon/', AddCouponView.as_view(), name='add-coupon'),
 ]

@@ -59,6 +59,8 @@ validators = "==0.18.2"
 whitenoise = "==5.3.0"
 django-countries = "*"
 paypalrestsdk = "*"
+braintree = "*"
+stripe = "*"
 
 [dev-packages]
 

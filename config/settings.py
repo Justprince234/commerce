@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import cloudinary
 import cloudinary_storage
 
+import stripe
+
 import paypalrestsdk
 
 import environ
@@ -132,6 +134,9 @@ CLOUDINARY_STORAGE = {
 #     "client_id": env("PAYPAL_CLIENT_ID"),
 #     "client_secret": env("PAYPAL_CLIENT_SECRET")})
 
+# Stripe
+STRIPE_TEST_PUBLIC_KEY='pk_test_51KB2ClJLScrUOnzdOxYCALzuNDJa1b4WxzXRPyzXgESjxH5ygyuHtZhFZlKnfOkttDmqPlwJdvAU9qPjODAmha5700n4nY6acS'
+STRIPE_TEST_SECRET_KEY = env('STRIPE_TEST_SECRET_KEY')
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators

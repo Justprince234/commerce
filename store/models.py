@@ -102,6 +102,12 @@ class Order(models.Model):
             total += order_item.get_final_price()
         return total
 
+class Coupon(models.Model):
+    code = models.CharField(max_length=15)
+    amount = models.FloatField()
+
+    def __str__(self):
+        return self.code
 
 class CheckoutAddress(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -115,8 +121,8 @@ class CheckoutAddress(models.Model):
         return self.owner.first_name
 
 class Payment(models.Model):
-    paypal_id = models.CharField(max_length=100)
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, 
+    stripe_charge_id = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, 
                              on_delete=models.SET_NULL, blank=True, null=True)
     amount = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)

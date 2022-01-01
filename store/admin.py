@@ -7,6 +7,7 @@ from .models import (
     Order,
     CheckoutAddress,
     Payment,
+    Coupon,
     MembershipForm,
     Contact,
     UserProfile,
@@ -65,9 +66,9 @@ admin.site.register(CheckoutAddress, CheckoutAddressAdmin)
 
 class PaymentAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'owner', 'paypal_id', 'amount')
-    list_display_links = ('id', 'owner')
-    search_fields = ('owner',)
+    list_display = ('id', 'user', 'stripe_charge_id', 'amount')
+    list_display_links = ('id', 'user')
+    search_fields = ('user',)
     list_per_page = 25
 
 admin.site.register(Payment, PaymentAdmin)
@@ -91,3 +92,4 @@ class ContactAdmin(admin.ModelAdmin):
 admin.site.register(Contact, ContactAdmin)
 
 admin.site.register(UserProfile)
+admin.site.register(Coupon)
