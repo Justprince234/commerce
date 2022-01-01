@@ -26,7 +26,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 # Checkout Address Serializer
 class CheckoutAddressSerializer(serializers.ModelSerializer):
-    owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     country = CountryField()
     class Meta:
         model = CheckoutAddress
@@ -34,12 +34,12 @@ class CheckoutAddressSerializer(serializers.ModelSerializer):
 
     def save(self, **kwargs):
         """Include default for read_only `account` field"""
-        kwargs["owner"] = self.fields["owner"].get_default()
+        kwargs["user"] = self.fields["user"].get_default()
         return super().save(**kwargs)
 
 
 class OrderProductSerializer(serializers.ModelSerializer):
-    owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     product =  ProductSerializer()
     get_total_product_price = serializers.IntegerField(read_only=True)
     get_final_price = serializers.IntegerField(read_only=True)
@@ -60,12 +60,12 @@ class OrderProductSerializer(serializers.ModelSerializer):
 
     def save(self, **kwargs):
         """Include default for read_only `account` field"""
-        kwargs["owner"] = self.fields["owner"].get_default()
+        kwargs["user"] = self.fields["user"].get_default()
         return super().save(**kwargs)
 
 class OrderSerializer(serializers.ModelSerializer):
     products =  OrderProductSerializer(many=True)
-    owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     class Meta:
         model = Order
         fields = '__all__'
@@ -83,7 +83,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def save(self, **kwargs):
         """Include default for read_only `account` field"""
-        kwargs["owner"] = self.fields["owner"].get_default()
+        kwargs["user"] = self.fields["user"].get_default()
         return super().save(**kwargs)
 
 class PaymentSerializer(serializers.ModelSerializer):

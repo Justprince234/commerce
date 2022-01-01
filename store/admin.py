@@ -39,27 +39,27 @@ admin.site.register(Product, ProductAdmin)
 
 class OrderProductAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'owner', 'product', 'quantity', 'ordered')
-    list_display_links = ('id', 'owner')
-    search_fields = ('owner',)
+    list_display = ('id', 'user', 'product', 'quantity', 'ordered')
+    list_display_links = ('id', 'user')
+    search_fields = ('user',)
     list_per_page = 25
 
 admin.site.register(OrderProduct, OrderProductAdmin)
 
 class OrderAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'owner', 'ordered_date', 'ordered', 'checkout_address', 'payment')
-    list_display_links = ('id', 'owner')
-    search_fields = ('owner',)
+    list_display = ('id', 'user', 'ordered_date', 'ordered', 'checkout_address', 'payment')
+    list_display_links = ('id', 'user')
+    search_fields = ('user',)
     list_per_page = 25
 
 admin.site.register(Order, OrderAdmin)
 
 class CheckoutAddressAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'owner', 'apartment_address', 'street_address', 'state', 'country', 'zip')
-    list_display_links = ('id', 'owner')
-    search_fields = ('owner',)
+    list_display = ('id', 'user', 'apartment_address', 'street_address', 'state', 'country', 'zip')
+    list_display_links = ('id', 'user')
+    search_fields = ('user',)
     list_per_page = 25
 
 admin.site.register(CheckoutAddress, CheckoutAddressAdmin)

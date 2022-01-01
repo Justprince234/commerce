@@ -60,7 +60,7 @@ class Product(models.Model):
 
 class OrderProduct(models.Model):
     """Creates a database instance OrderItem in database."""
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
@@ -79,7 +79,7 @@ class OrderProduct(models.Model):
         return self.get_total_item_price()
 
 class Order(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     products = models.ManyToManyField(OrderProduct)
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField()
@@ -110,7 +110,7 @@ class Coupon(models.Model):
         return self.code
 
 class CheckoutAddress(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     apartment_address = models.CharField(max_length=100)
     street_address = models.CharField(max_length=100)
     state = models.CharField(max_length=50)
