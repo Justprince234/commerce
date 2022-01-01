@@ -28,7 +28,7 @@ schema_view = get_schema_view(
    openapi.Info(
       title="Snippets API",
       default_version='v1',
-      description="This a modeled banking api",
+      description="E-Commerce app api",
       terms_of_service="https://www.google.com/policies/terms/",
       contact=openapi.Contact(email="contact@deunionreserve.local"),
       license=openapi.License(name="Test License"),
