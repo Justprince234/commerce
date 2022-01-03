@@ -6,8 +6,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, UserProfile, Coupon
-from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer
+from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, UserProfile, Coupon, CartItem, Cart
+from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer, CartItemSerializer
 
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
@@ -20,6 +20,8 @@ from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser
+from rest_framework.exceptions import ValidationError, PermissionDenied
+from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponse,JsonResponse
 
 # Stripe
@@ -306,6 +308,83 @@ class AddCouponView(APIView):
         order.coupon = coupon
         order.save()
         return Response(status=HTTP_200_OK)
+
+class CartItemAPIView(generics.ListCreateAPIView):
+    serializer_class = CartItemSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = CartItem.objects.filter(cart__user=user)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        cart = get_object_or_404(Cart, user=user)
+        product = get_object_or_404(Product, pk=request.data["product"])
+        current_item = CartItem.objects.filter(cart=cart, product=product)
+
+        # if user == product.user:
+        #     raise PermissionDenied("This Is Your Product")
+
+        # if current_item.count() > 0:
+        #     raise NotAcceptable("You already have this item in your shopping cart")
+
+        try:
+            quantity = int(request.data["quantity"])
+        except Exception as e:
+            raise ValidationError("Please Enter Your Quantity")
+
+        cart_item = CartItem(cart=cart, product=product, quantity=quantity)
+        cart_item.save()
+        serializer = CartItemSerializer(cart_item)
+        total = float(product.price) * float(quantity)
+        cart.total = total
+        cart.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class CartItemView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CartItemSerializer
+    # method_serializer_classes = {
+    #     ('PUT',): CartItemUpdateSerializer
+    # }
+    queryset = CartItem.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        cart_item = self.get_object()
+        if cart_item.cart.user != request.user:
+            raise PermissionDenied("Sorry this cart not belong to you")
+        serializer = self.get_serializer(cart_item)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        cart_item = self.get_object()
+        print(request.data)
+        product = get_object_or_404(Product, pk=request.data["product"])
+
+        if cart_item.cart.user != request.user:
+            raise PermissionDenied("Sorry this cart not belong to you")
+
+        try:
+            quantity = int(request.data["quantity"])
+        except Exception as e:
+            raise ValidationError("Please, input vaild quantity")
+
+        serializer = CartItemSerializer(cart_item, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        cart_item = self.get_object()
+        if cart_item.cart.user != request.user:
+            raise PermissionDenied("Sorry this cart not belong to you")
+        cart_item.delete()
+
+        return Response(
+            {"detail": _("your item has been deleted.")},
+            status=status.HTTP_204_NO_CONTENT,
+        )
 
 class PaymentListView(generics.ListAPIView):
     permission_classes = (IsAuthenticated, )

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, Coupon
+from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, Coupon, Cart, CartItem
 
 from rest_framework.fields import CurrentUserDefault
 from django_countries.serializer_fields import CountryField
@@ -96,6 +96,12 @@ class PaymentSerializer(serializers.ModelSerializer):
         """Include default for read_only `account` field"""
         kwargs["user"] = self.fields["user"].get_default()
         return super().save(**kwargs)
+
+class CartItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(required=False)
+    class Meta:
+        model = CartItem
+        fields = '__all__'
 
 class MembershipFormSerializer(serializers.ModelSerializer):
     class Meta:

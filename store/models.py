@@ -1,9 +1,11 @@
 from datetime import date
 from django.db import models
+from django.db.models.base import Model
 from accounts.models import User
 from django_countries.fields import CountryField
 from django.urls import reverse
 from  django.conf import settings
+from django.dispatch import receiver
 from django.db.models.signals import post_save
 
 # Create your models here.
@@ -132,6 +134,27 @@ class Payment(models.Model):
 
     def __str__(self):
         return self.owner.first_name
+
+class Cart(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, 
+                             on_delete=models.SET_NULL, blank=True, null=True)
+    total = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, blank=True, null=True
+    )
+
+
+    @receiver(post_save, sender=User)
+    def create_user_cart(sender, created, instance, *args, **kwargs):
+        if created:
+            Cart.objects.create(user=instance)
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name="cart_item", on_delete=models.CASCADE)
+    product = models.ForeignKey(
+        Product, related_name="cart_product", on_delete=models.CASCADE
+    )
+    quantity = models.IntegerField(default=1)
     
 class MembershipForm(models.Model):
     country = CountryField(multiple=False, blank_label='(select country)')
