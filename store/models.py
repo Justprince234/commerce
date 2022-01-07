@@ -136,7 +136,7 @@ class Payment(models.Model):
         return self.owner.first_name
 
 class Cart(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, 
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, 
                              on_delete=models.SET_NULL, blank=True, null=True)
     total = models.DecimalField(
         max_digits=10, decimal_places=2, default=0, blank=True, null=True

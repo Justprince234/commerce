@@ -20,7 +20,7 @@ from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.exceptions import ValidationError, PermissionDenied, NotAcceptable
 from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponse,JsonResponse
 
@@ -313,7 +313,7 @@ class CartItemAPIView(generics.ListCreateAPIView):
     serializer_class = CartItemSerializer
 
     def get_queryset(self):
-        user = self.request.user
+        user = self.request.user.id
         queryset = CartItem.objects.filter(cart__user=user)
         return queryset
 
@@ -323,11 +323,8 @@ class CartItemAPIView(generics.ListCreateAPIView):
         product = get_object_or_404(Product, pk=request.data["product"])
         current_item = CartItem.objects.filter(cart=cart, product=product)
 
-        # if user == product.user:
-        #     raise PermissionDenied("This Is Your Product")
-
-        # if current_item.count() > 0:
-        #     raise NotAcceptable("You already have this item in your shopping cart")
+        if current_item.count() > 0:
+            raise NotAcceptable("You already have this item in your shopping cart")
 
         try:
             quantity = int(request.data["quantity"])
