@@ -231,6 +231,7 @@ class PaymentView(APIView):
             charge = stripe.Charge.create(
                 amount=amount,  # cents
                 currency="usd",
+                description='Charge from Direshop777 Store',
                 customer=userprofile.stripe_customer_id
             )
             # charge once off on the token
