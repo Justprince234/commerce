@@ -23,7 +23,7 @@ class UserProfile(models.Model):
     one_click_purchasing = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.user.fist_name
+        return self.user.first_name
 
 class Category(models.Model):
     """Creates a database instance of Category in database."""
