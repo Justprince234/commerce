@@ -318,7 +318,7 @@ class CartItemAPIView(generics.ListCreateAPIView):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        user = request.user
+        user = request.user.id
         cart = get_object_or_404(Cart, user=user)
         product = get_object_or_404(Product, pk=request.data["product"])
         current_item = CartItem.objects.filter(cart=cart, product=product)
