@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, UserProfile, Coupon, CartItem, Cart
+from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, UserProfile, Coupon, Cart
 from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer, CartItemSerializer
 
 from rest_framework.response import Response
@@ -90,7 +90,7 @@ class AddToCartView(APIView):
 
         order_item_qs = OrderProduct.objects.filter(
             item=item,
-            user=request.user,
+            # user=request.user,
             ordered=False
         )
         if order_item_qs.exists():
@@ -100,12 +100,12 @@ class AddToCartView(APIView):
         else:
             order_item = OrderProduct.objects.create(
                 item=item,
-                user=request.user,
+                # user=request.user,
                 ordered=False
             )
             order_item.save()
 
-        order_qs = Order.objects.filter(user=request.user, ordered=False)
+        order_qs = Order.objects.filter(ordered=False)
         if order_qs.exists():
             order = order_qs[0]
             if not order.products.filter(item__id=order_item.id).exists():
@@ -114,8 +114,7 @@ class AddToCartView(APIView):
 
         else:
             ordered_date = timezone.now()
-            order = Order.objects.create(
-                user=request.user, ordered_date=ordered_date)
+            order = Order.objects.create(ordered_date=ordered_date)
             order.products.add(order_item)
             return Response(status=HTTP_200_OK)
 
@@ -156,7 +155,6 @@ class OrderQuantityUpdateView(APIView):
             return Response({"message": "Invalid data"}, status=HTTP_400_BAD_REQUEST)
         product = get_object_or_404(Product, slug=slug)
         order_qs = Order.objects.filter(
-            user=request.user,
             ordered=False
         )
         if order_qs.exists():
@@ -165,7 +163,6 @@ class OrderQuantityUpdateView(APIView):
             if order.products.filter(product__slug=product.slug).exists():
                 order_item = OrderProduct.objects.filter(
                     product=product,
-                    user=request.user,
                     ordered=False
                 )[0]
                 if order_item.quantity > 1:
@@ -181,29 +178,26 @@ class OrderQuantityUpdateView(APIView):
 
 
 class OrderItemDeleteView(generics.DestroyAPIView):
-    permission_classes = (IsAuthenticated, )
     queryset = OrderProduct.objects.all()
     
 
 class OrderDetailView(generics.RetrieveAPIView):
     serializer_class = OrderSerializer
-    permission_classes = (IsAuthenticated,)
 
     def get_object(self):
         try:
-            order = Order.objects.get(user=self.request.user, ordered=False)
+            order = Order.objects.get(ordered=False)
             return order
         except ObjectDoesNotExist:
             raise Http404("You do not have an active order")
             # return Response({"message": "You do not have an active order"}, status=HTTP_400_BAD_REQUEST)
 
-
 #Checkout
 class PaymentView(APIView):
 
     def post(self, request, *args, **kwargs):
-        order = Order.objects.get(user=self.request.user, ordered=False)
-        userprofile = UserProfile.objects.get(user=self.request.user)
+        order = Order.objects.get(ordered=False)
+        userprofile = UserProfile.objects.all()
         token = request.data.get('stripeToken')
         checkout_address_id = request.data.get('selectedCheckoutAddress')
 
@@ -216,7 +210,7 @@ class PaymentView(APIView):
 
         else:
             customer = stripe.Customer.create(
-                email=self.request.user.email,
+                email=self.request.order.email,
             )
             customer.sources.create(source=token)
             userprofile.stripe_customer_id = customer['id']
@@ -244,7 +238,6 @@ class PaymentView(APIView):
             # create the payment
             payment = Payment()
             payment.stripe_charge_id = charge['id']
-            payment.user = self.request.user
             payment.amount = order.get_final_price()
             payment.save()
 
@@ -303,8 +296,7 @@ class AddCouponView(APIView):
         code = request.data.get('code', None)
         if code is None:
             return Response({"message": "Invalid data received"}, status=HTTP_400_BAD_REQUEST)
-        order = Order.objects.get(
-            user=self.request.user, ordered=False)
+        order = Order.objects.get(ordered=False)
         coupon = get_object_or_404(Coupon, code=code)
         order.coupon = coupon
         order.save()
@@ -314,15 +306,13 @@ class CartItemAPIView(generics.ListCreateAPIView):
     serializer_class = CartItemSerializer
 
     def get_queryset(self):
-        user = self.request.user.id
-        queryset = CartItem.objects.filter(cart__user=user)
+        queryset = Cart.objects.all()
         return queryset
 
     def create(self, request, *args, **kwargs):
-        user = request.user.id
-        cart = get_object_or_404(Cart, user=user)
+        cart = get_object_or_404(Cart)
         product = get_object_or_404(Product, pk=request.data["product"])
-        current_item = CartItem.objects.filter(cart=cart, product=product)
+        current_item = Cart.objects.filter(cart=cart, product=product)
 
         if current_item.count() > 0:
             raise NotAcceptable("You already have this item in your shopping cart")
@@ -332,7 +322,7 @@ class CartItemAPIView(generics.ListCreateAPIView):
         except Exception as e:
             raise ValidationError("Please Enter Your Quantity")
 
-        cart_item = CartItem(cart=cart, product=product, quantity=quantity)
+        cart_item = Cart(cart=cart, product=product, quantity=quantity)
         cart_item.save()
         serializer = CartItemSerializer(cart_item)
         total = float(product.price) * float(quantity)
@@ -346,12 +336,10 @@ class CartItemView(generics.RetrieveUpdateDestroyAPIView):
     # method_serializer_classes = {
     #     ('PUT',): CartItemUpdateSerializer
     # }
-    queryset = CartItem.objects.all()
+    queryset = Cart.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
         cart_item = self.get_object()
-        if cart_item.cart.user != request.user:
-            raise PermissionDenied("Sorry this cart not belong to you")
         serializer = self.get_serializer(cart_item)
         return Response(serializer.data)
 
@@ -359,9 +347,6 @@ class CartItemView(generics.RetrieveUpdateDestroyAPIView):
         cart_item = self.get_object()
         print(request.data)
         product = get_object_or_404(Product, pk=request.data["product"])
-
-        if cart_item.cart.user != request.user:
-            raise PermissionDenied("Sorry this cart not belong to you")
 
         try:
             quantity = int(request.data["quantity"])
@@ -385,7 +370,6 @@ class CartItemView(generics.RetrieveUpdateDestroyAPIView):
         )
 
 class PaymentListView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated, )
     serializer_class = PaymentSerializer
 
     def get_queryset(self):

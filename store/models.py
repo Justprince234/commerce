@@ -17,13 +17,11 @@ SEX = (
 )
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     stripe_customer_id = models.CharField(max_length=100, blank=True, null=True)
     one_click_purchasing = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.user.first_name
+        return self.stripe_customer_id
 
 class Category(models.Model):
     """Creates a database instance of Category in database."""
@@ -62,7 +60,6 @@ class Product(models.Model):
 
 class OrderProduct(models.Model):
     """Creates a database instance OrderItem in database."""
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
@@ -81,7 +78,10 @@ class OrderProduct(models.Model):
         return self.get_total_item_price()
 
 class Order(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    email = models.EmailField()
     products = models.ManyToManyField(OrderProduct)
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField()
@@ -96,7 +96,7 @@ class Order(models.Model):
         ordering = ('-date',)
 
     def __str__(self):
-        return self.owner.first_name
+        return self.first_name
     
     def get_total_price(self):
         total = 0
@@ -112,20 +112,17 @@ class Coupon(models.Model):
         return self.code
 
 class CheckoutAddress(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    apartment_address = models.CharField(max_length=100)
+    apartment_number = models.CharField(max_length=100)
     street_address = models.CharField(max_length=100)
     state = models.CharField(max_length=50)
     country = CountryField(multiple=False, blank_label='(select country)')
     zip = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.owner.first_name
+        return self.street_address
 
 class Payment(models.Model):
     stripe_charge_id = models.CharField(max_length=100)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, 
-                             on_delete=models.SET_NULL, blank=True, null=True)
     amount = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -133,28 +130,16 @@ class Payment(models.Model):
         ordering = ('-timestamp',)
 
     def __str__(self):
-        return self.owner.first_name
+        return self.stripe_charge_id
 
 class Cart(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, 
-                             on_delete=models.SET_NULL, blank=True, null=True)
-    total = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, blank=True, null=True
-    )
-
-
-    @receiver(post_save, sender=User)
-    def create_user_cart(sender, created, instance, *args, **kwargs):
-        if created:
-            Cart.objects.create(user=instance)
-
-
-class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, related_name="cart_item", on_delete=models.CASCADE)
     product = models.ForeignKey(
         Product, related_name="cart_product", on_delete=models.CASCADE
     )
     quantity = models.IntegerField(default=1)
+    total = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, blank=True, null=True
+    )
     
 class MembershipForm(models.Model):
     country = CountryField(multiple=False, blank_label='(select country)')
@@ -184,9 +169,9 @@ class Contact(models.Model):
     def __str__(self):
         return self.name
 
-def userprofile_receiver(sender, instance, created, *args, **kwargs):
-    if created:
-        userprofile = UserProfile.objects.create(user=instance)
+# def userprofile_receiver(sender, instance, created, *args, **kwargs):
+#     if created:
+#         userprofile = UserProfile.objects.create(user=instance)
 
 
-post_save.connect(userprofile_receiver, sender=settings.AUTH_USER_MODEL)
+# post_save.connect(userprofile_receiver, sender=settings.AUTH_USER_MODEL)

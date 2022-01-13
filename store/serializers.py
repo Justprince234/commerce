@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import fields
 from rest_framework import serializers
-from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, Coupon, Cart, CartItem
+from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, Coupon, Cart
 
 from rest_framework.fields import CurrentUserDefault
 from django_countries.serializer_fields import CountryField
@@ -28,20 +28,12 @@ class CategorySerializer(serializers.ModelSerializer):
 
 # Checkout Address Serializer
 class CheckoutAddressSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     country = CountryField()
     class Meta:
         model = CheckoutAddress
         fields = '__all__'
 
-    def save(self, **kwargs):
-        """Include default for read_only `account` field"""
-        kwargs["user"] = self.fields["user"].get_default()
-        return super().save(**kwargs)
-
-
 class OrderProductSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     product =  ProductSerializer()
     get_total_product_price = serializers.IntegerField(read_only=True)
     get_final_price = serializers.IntegerField(read_only=True)
@@ -59,15 +51,8 @@ class OrderProductSerializer(serializers.ModelSerializer):
     def get_final_price(self, obj):
         return obj.get_final_price()
 
-
-    def save(self, **kwargs):
-        """Include default for read_only `account` field"""
-        kwargs["user"] = self.fields["user"].get_default()
-        return super().save(**kwargs)
-
 class OrderSerializer(serializers.ModelSerializer):
     products =  OrderProductSerializer(many=True)
-    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     class Meta:
         model = Order
         fields = '__all__'
@@ -83,26 +68,15 @@ class OrderSerializer(serializers.ModelSerializer):
             return CouponSerializer(obj.coupon).data
         return None
 
-    def save(self, **kwargs):
-        """Include default for read_only `account` field"""
-        kwargs["user"] = self.fields["user"].get_default()
-        return super().save(**kwargs)
-
 class PaymentSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     class Meta:
         model = Payment
         fields = '__all__'
 
-    def save(self, **kwargs):
-        """Include default for read_only `account` field"""
-        kwargs["user"] = self.fields["user"].get_default()
-        return super().save(**kwargs)
-
 class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(required=False)
     class Meta:
-        model = CartItem
+        model = Cart
         fields = '__all__'
 
 class MembershipFormSerializer(serializers.ModelSerializer):

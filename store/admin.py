@@ -11,8 +11,7 @@ from .models import (
     MembershipForm,
     Contact,
     UserProfile,
-    Cart,
-    CartItem
+    Cart
 )
 
 admin.site.site_header = 'Direshop777'
@@ -41,36 +40,36 @@ admin.site.register(Product, ProductAdmin)
 
 class OrderProductAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'user', 'product', 'quantity', 'ordered')
-    list_display_links = ('id', 'user')
-    search_fields = ('user',)
+    list_display = ('id', 'product', 'quantity', 'ordered')
+    list_display_links = ('id', )
+    search_fields = ('product',)
     list_per_page = 25
 
 admin.site.register(OrderProduct, OrderProductAdmin)
 
 class OrderAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'user', 'ordered_date', 'ordered', 'checkout_address', 'payment')
-    list_display_links = ('id', 'user')
-    search_fields = ('user',)
+    list_display = ('id', 'first_name', 'last_name', 'phone', 'email', 'ordered_date', 'ordered', 'checkout_address', 'payment')
+    list_display_links = ('id', 'first_name')
+    search_fields = ('first_name',)
     list_per_page = 25
 
 admin.site.register(Order, OrderAdmin)
 
 class CheckoutAddressAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'user', 'apartment_address', 'street_address', 'state', 'country', 'zip')
-    list_display_links = ('id', 'user')
-    search_fields = ('user',)
+    list_display = ('id', 'apartment_number', 'street_address', 'state', 'country', 'zip')
+    list_display_links = ('id', 'street_address')
+    search_fields = ('street_address',)
     list_per_page = 25
 
 admin.site.register(CheckoutAddress, CheckoutAddressAdmin)
 
 class PaymentAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'user', 'stripe_charge_id', 'amount')
-    list_display_links = ('id', 'user')
-    search_fields = ('user',)
+    list_display = ('id', 'stripe_charge_id', 'amount')
+    list_display_links = ('id', 'stripe_charge_id')
+    search_fields = ('stripe_charge_id',)
     list_per_page = 25
 
 admin.site.register(Payment, PaymentAdmin)
@@ -96,4 +95,3 @@ admin.site.register(Contact, ContactAdmin)
 admin.site.register(UserProfile)
 admin.site.register(Coupon)
 admin.site.register(Cart)
-admin.site.register(CartItem)
