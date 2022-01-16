@@ -333,9 +333,6 @@ class CartItemAPIView(generics.ListCreateAPIView):
 
 class CartItemView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CartItemSerializer
-    # method_serializer_classes = {
-    #     ('PUT',): CartItemUpdateSerializer
-    # }
     queryset = Cart.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
@@ -371,7 +368,7 @@ class PaymentListView(generics.ListAPIView):
     serializer_class = PaymentSerializer
 
     def get_queryset(self):
-        return Payment.objects.filter(user=self.request.user)
+        return Payment.objects.filter(stripe_charge_id=self.request.stripe_charge_id)
 
 class MembershipFormList(generics.ListCreateAPIView):
     queryset = MembershipForm.objects.all()
