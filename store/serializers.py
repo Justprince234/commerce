@@ -13,6 +13,11 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
 
+class ProductCartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id']
+
 # Category Serializer
 class CategorySerializer(serializers.ModelSerializer):
     products = ProductSerializer(many=True)
@@ -74,7 +79,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(required=False)
+    product = ProductCartSerializer()
     class Meta:
         model = Cart
         fields = '__all__'

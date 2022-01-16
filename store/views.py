@@ -311,7 +311,7 @@ class CartItemAPIView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         cart = get_object_or_404(Cart)
-        product = get_object_or_404(Product, pk=request.data["product"])
+        product = Product.objects.get(pk=request.data['product_id'])
         current_item = Cart.objects.filter(cart=cart, product=product)
 
         if current_item.count() > 0:
@@ -346,7 +346,7 @@ class CartItemView(generics.RetrieveUpdateDestroyAPIView):
     def update(self, request, *args, **kwargs):
         cart_item = self.get_object()
         print(request.data)
-        product = get_object_or_404(Product, pk=request.data["product"])
+        product = Product.objects.get(pk=request.data['product_id'])
 
         try:
             quantity = int(request.data["quantity"])
@@ -360,8 +360,6 @@ class CartItemView(generics.RetrieveUpdateDestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         cart_item = self.get_object()
-        if cart_item.cart.user != request.user:
-            raise PermissionDenied("Sorry this cart not belong to you")
         cart_item.delete()
 
         return Response(
