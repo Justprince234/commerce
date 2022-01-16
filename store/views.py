@@ -1,3 +1,5 @@
+from subprocess import IDLE_PRIORITY_CLASS
+from xml.dom.minidom import Identified
 from django.db.models import query
 from django.db.models import Q
 from django.http.response import Http404
@@ -82,15 +84,14 @@ def search(request):
 # Add to cart
 class AddToCartView(APIView):
     def post(self, request, *args, **kwargs):
-        slug = request.data.get('slug', None)
-        if slug is None:
+        id = request.data.get('id', None)
+        if id is None:
             return Response({"message": "Invalid request"}, status=HTTP_400_BAD_REQUEST)
 
-        item = get_object_or_404(Product, slug=slug)
+        item = get_object_or_404(Product, id=id)
 
         order_item_qs = OrderProduct.objects.filter(
             item=item,
-            # user=request.user,
             ordered=False
         )
         if order_item_qs.exists():
@@ -100,7 +101,6 @@ class AddToCartView(APIView):
         else:
             order_item = OrderProduct.objects.create(
                 item=item,
-                # user=request.user,
                 ordered=False
             )
             order_item.save()
