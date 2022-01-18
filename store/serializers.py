@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import fields
 from rest_framework import serializers
-from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, Coupon, Cart
+from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, Coupon
 
 from rest_framework.fields import CurrentUserDefault
 from django_countries.serializer_fields import CountryField
@@ -39,7 +39,7 @@ class CheckoutAddressSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class OrderProductSerializer(serializers.ModelSerializer):
-    product =  ProductSerializer()
+    product =  ProductCartSerializer()
     get_total_product_price = serializers.IntegerField(read_only=True)
     get_final_price = serializers.IntegerField(read_only=True)
 
@@ -76,12 +76,6 @@ class OrderSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = '__all__'
-
-class CartItemSerializer(serializers.ModelSerializer):
-    product = ProductCartSerializer()
-    class Meta:
-        model = Cart
         fields = '__all__'
 
 class MembershipFormSerializer(serializers.ModelSerializer):

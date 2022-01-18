@@ -131,15 +131,6 @@ class Payment(models.Model):
 
     def __str__(self):
         return self.stripe_charge_id
-
-class Cart(models.Model):
-    product = models.ForeignKey(
-        Product, related_name="cart_product", on_delete=models.CASCADE
-    )
-    quantity = models.IntegerField(default=1)
-    total = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, blank=True, null=True
-    )
     
 class MembershipForm(models.Model):
     country = CountryField(multiple=False, blank_label='(select country)')

@@ -11,7 +11,6 @@ from .models import (
     MembershipForm,
     Contact,
     UserProfile,
-    Cart
 )
 
 admin.site.site_header = 'Direshop777'
@@ -94,4 +93,3 @@ admin.site.register(Contact, ContactAdmin)
 
 admin.site.register(UserProfile)
 admin.site.register(Coupon)
-admin.site.register(Cart)

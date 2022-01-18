@@ -6,8 +6,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, UserProfile, Coupon, Cart
-from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer, CartItemSerializer
+from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, UserProfile, Coupon
+from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer
 
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
@@ -80,41 +80,56 @@ def search(request):
         return Response({'products': []})
 
 # Add to cart
-class AddToCartView(APIView):
-    def post(self, request, *args, **kwargs):
-        id = request.data.get('id', None)
-        if id is None:
-            return Response({"message": "Invalid request"}, status=HTTP_400_BAD_REQUEST)
+# class AddToCartView(APIView):
+    # serializer_class = OrderProductSerializer
+    # queryset = OrderProduct.objects.all()
+    # def post(self, request, format=None):
+    #     serializer = self.serializer_class(data=request.data)
+    #     if serializer.is_valid(raise_exception=True):
+    #         product_id = serializer.data.get('temperature')
+    #         description = serializer.data.get('description')
+    #         order_product = OrderProduct(temperature=temperature, description=description)
+    #         order_product.save()
+    #         print(serializer.errors)
+    #         return Response(OrderProductSerializer(order_product).data, status=status.HTTP_201_CREATED)
+            
 
-        product = get_object_or_404(Product, id=id)
+    #     return Response({'Bad Request': "Invalid Data..."}, status=status.HTTP_400_BAD_REQUEST)
+        
+    # def post(self, request, *args, **kwargs):
+    #     id = request.data.get('id', None)
+    #     if id is None:
+    #         return Response({"message": "Invalid request"}, status=HTTP_400_BAD_REQUEST)
 
-        order_item_qs = OrderProduct.objects.filter(
-            product=product,
-            ordered=False
-        )
-        if order_item_qs.exists():
-            order_item = order_item_qs.first()
-            order_item.quantity += 1
-            order_item.save()
-        else:
-            order_item = OrderProduct.objects.create(
-                product=product,
-                ordered=False
-            )
-            order_item.save()
+    #     product = get_object_or_404(Product, id=id)
 
-        order_qs = Order.objects.filter(ordered=False)
-        if order_qs.exists():
-            order = order_qs[0]
-            if not order.products.filter(item__id=order_item.id).exists():
-                order.products.add(order_item)
-                return Response(status=HTTP_200_OK)
+    #     order_item_qs = OrderProduct.objects.filter(
+    #         product=product,
+    #         ordered=False
+    #     )
+    #     if order_item_qs.exists():
+    #         order_item = order_item_qs.first()
+    #         order_item.quantity += 1
+    #         order_item.save()
+    #     else:
+    #         order_item = OrderProduct.objects.create(
+    #             product=product,
+    #             ordered=False
+    #         )
+    #         order_item.save()
 
-        else:
-            ordered_date = timezone.now()
-            order = Order.objects.create(ordered_date=ordered_date)
-            order.products.add(order_item)
-            return Response(status=HTTP_200_OK)
+    #     order_qs = Order.objects.filter(ordered=False)
+    #     if order_qs.exists():
+    #         order = order_qs[0]
+    #         if not order.products.filter(item__id=order_item.id).exists():
+    #             order.products.add(order_item)
+    #             return Response(status=HTTP_200_OK)
+
+    #     else:
+    #         ordered_date = timezone.now()
+    #         order = Order.objects.create(ordered_date=ordered_date)
+    #         order.products.add(order_item)
+    #         return Response(status=HTTP_200_OK)
 
 class CountryListView(APIView):
     def get(self, request, *args, **kwargs):
@@ -293,68 +308,6 @@ class AddCouponView(APIView):
         order.save()
         return Response(status=HTTP_200_OK)
 
-class CartItemAPIView(generics.ListCreateAPIView):
-    serializer_class = CartItemSerializer
-
-    def get_queryset(self):
-        queryset = Cart.objects.all()
-        return queryset
-
-    def create(self, request, *args, **kwargs):
-        cart = get_object_or_404(Cart)
-        product = Product.objects.get(pk=request.data['product_id'])
-        current_item = Cart.objects.filter(cart=cart, product=product)
-
-        if current_item.count() > 0:
-            raise NotAcceptable("You already have this item in your shopping cart")
-
-        try:
-            quantity = int(request.data["quantity"])
-        except Exception as e:
-            raise ValidationError("Please Enter Your Quantity")
-
-        cart_item = Cart(cart=cart, product=product, quantity=quantity)
-        cart_item.save()
-        serializer = CartItemSerializer(cart_item)
-        total = float(product.price) * float(quantity)
-        cart.total = total
-        cart.save()
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-class CartItemView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = CartItemSerializer
-    queryset = Cart.objects.all()
-
-    def retrieve(self, request, *args, **kwargs):
-        cart_item = self.get_object()
-        serializer = self.get_serializer(cart_item)
-        return Response(serializer.data)
-
-    def update(self, request, *args, **kwargs):
-        cart_item = self.get_object()
-        print(request.data)
-        product = Product.objects.get(pk=request.data['product_id'])
-
-        try:
-            quantity = int(request.data["quantity"])
-        except Exception as e:
-            raise ValidationError("Please, input vaild quantity")
-
-        serializer = CartItemSerializer(cart_item, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        cart_item = self.get_object()
-        cart_item.delete()
-
-        return Response(
-            {"detail": _("your item has been deleted.")},
-            status=status.HTTP_204_NO_CONTENT,
-        )
-
 class PaymentListView(generics.ListAPIView):
     serializer_class = PaymentSerializer
 
@@ -379,3 +332,26 @@ class StripeConfigView(APIView):
             "publishable_key": str(settings.STRIPE_TEST_PUBLIC_KEY)
         }
         return Response(config)
+
+class cartview(APIView):
+    def post(self,request):
+        serializer=OrderProductSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"status":"Success","data":serializer.data},status=status.HTTP_200_OK)
+        return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, id=None):
+        if id:
+            product = Product.objects.get(id=id)
+            serializer = OrderProductSerializer(product)
+            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+        products = OrderProduct.objects.all()
+        serializer = OrderProductSerializer(products, many=True)
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    def delete(self, request, id=None):
+        product = get_object_or_404(Product, id=id)
+        product.delete()
+        return Response({"status": "success", "data": "Item Deleted"})

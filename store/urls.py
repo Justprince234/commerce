@@ -11,7 +11,6 @@ from .views import (
     PaymentListView,
     PaymentView,
     StripeConfigView,
-    AddToCartView,
     OrderQuantityUpdateView,
     UserIDView,
     AddCouponView,
@@ -41,9 +40,11 @@ urlpatterns = [
     path('payments/', PaymentListView.as_view(), name='payment-list'),
     path('membershipform/', views.MembershipFormList.as_view()),
     path('contactlist/', views.ContactList.as_view()),
-    path('add-to-cart/', AddToCartView.as_view(), name='add-to-cart'),
+    # path('add-to-cart/', AddToCartView.as_view(), name='add-to-cart'),
     path('user-id/', UserIDView.as_view(), name='user-id'),
     path('add-coupon/', AddCouponView.as_view(), name='add-coupon'),
-    path("cart/", views.CartItemAPIView.as_view()),
-    path("cart-item/<int:pk>/", views.CartItemView.as_view()),
+    # path("cart/", views.CartItemAPIView.as_view()),
+    # path("cart-item/<int:pk>/", views.CartItemView.as_view()),
+    path("cart-item",views.cartview.as_view()),
+     path("cart-item/<int:id>",views.cartview.as_view())
 ]
