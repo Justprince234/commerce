@@ -1,4 +1,3 @@
-
 from django.db.models import query
 from django.db.models import Q
 from django.http.response import Http404
@@ -87,10 +86,10 @@ class AddToCartView(APIView):
         if id is None:
             return Response({"message": "Invalid request"}, status=HTTP_400_BAD_REQUEST)
 
-        item = get_object_or_404(Product, id=id)
+        product = get_object_or_404(Product, id=id)
 
         order_item_qs = OrderProduct.objects.filter(
-            item=item,
+            product=product,
             ordered=False
         )
         if order_item_qs.exists():
@@ -99,7 +98,7 @@ class AddToCartView(APIView):
             order_item.save()
         else:
             order_item = OrderProduct.objects.create(
-                item=item,
+                product=product,
                 ordered=False
             )
             order_item.save()
@@ -227,13 +226,6 @@ class PaymentView(APIView):
                 description='Charge from Direshop777 Store',
                 customer=userprofile.stripe_customer_id
             )
-            # charge once off on the token
-            # charge = stripe.Charge.create(
-            #     amount=amount,  # cents
-            #     currency="usd",
-            #     source=token
-            # )
-
             # create the payment
             payment = Payment()
             payment.stripe_charge_id = charge['id']
