@@ -45,6 +45,6 @@ urlpatterns = [
     path('add-coupon/', AddCouponView.as_view(), name='add-coupon'),
     # path("cart/", views.CartItemAPIView.as_view()),
     # path("cart-item/<int:pk>/", views.CartItemView.as_view()),
-    path("cart-item",views.cartview.as_view()),
+    path("cart-item/",views.cartview.as_view()),
      path("cart-item/<int:id>",views.cartview.as_view())
 ]
