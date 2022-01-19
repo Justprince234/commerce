@@ -1,3 +1,4 @@
+from logging import raiseExceptions
 from django.db.models import query
 from django.db.models import Q
 from django.http.response import Http404
@@ -336,7 +337,7 @@ class StripeConfigView(APIView):
 class cartview(APIView):
     def post(self,request):
         serializer=OrderProductSerializer(data=request.data)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response({"status":"Success","data":serializer.data},status=status.HTTP_200_OK)
         return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
