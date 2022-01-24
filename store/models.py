@@ -1,7 +1,6 @@
 from datetime import date
 from django.db import models
 from django.db.models.base import Model
-from accounts.models import User
 from django_countries.fields import CountryField
 from django.urls import reverse
 from  django.conf import settings
@@ -21,7 +20,7 @@ class UserProfile(models.Model):
     one_click_purchasing = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.stripe_customer_id
+        return str(self.stripe_customer_id)
 
 class Category(models.Model):
     """Creates a database instance of Category in database."""
@@ -58,7 +57,7 @@ class Product(models.Model):
         return f'/{self.category.slug}/{self.slug}/'
 
 
-class OrderProduct(models.Model):
+class Cart(models.Model):
     """Creates a database instance OrderItem in database."""
     ordered = models.BooleanField(default=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -75,51 +74,34 @@ class OrderProduct(models.Model):
         return self.quantity * self.product.price
 
     def get_final_price(self):
-        return self.get_total_item_price()
+        return self.get_total_product_price()
 
 class Order(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    phone = models.CharField(max_length=50, blank=True, null=True)
-    email = models.EmailField()
-    products = models.ManyToManyField(OrderProduct)
+    phone_number = models.CharField(max_length=50, blank=True, default='')
+    email = models.EmailField(verbose_name='email', max_length=60, unique=True)
+    products = models.ManyToManyField(Cart)
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField()
     ordered = models.BooleanField(default=False)
-    checkout_address = models.ForeignKey(
-        'CheckoutAddress', on_delete=models.SET_NULL, blank=True, null=True)
-    payment = models.ForeignKey(
-        'Payment', on_delete=models.SET_NULL, blank=True, null=True)
+    shipping_address = models.CharField(max_length=100)
+    country = CountryField(multiple=False, blank_label='(select country)')
+    zip = models.CharField(max_length=100)
+    payment = models.ForeignKey('Payment', on_delete=models.SET_NULL, blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ('-date',)
 
     def __str__(self):
-        return self.first_name
+        return str(self.first_name)
     
     def get_total_price(self):
         total = 0
-        for order_item in self.products.all():
-            total += order_item.get_final_price()
+        for order_product in self.products.all():
+            total += order_product.get_final_price()
         return total
-
-class Coupon(models.Model):
-    code = models.CharField(max_length=15)
-    amount = models.FloatField()
-
-    def __str__(self):
-        return self.code
-
-class CheckoutAddress(models.Model):
-    apartment_number = models.CharField(max_length=100)
-    street_address = models.CharField(max_length=100)
-    state = models.CharField(max_length=50)
-    country = CountryField(multiple=False, blank_label='(select country)')
-    zip = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.street_address
 
 class Payment(models.Model):
     stripe_charge_id = models.CharField(max_length=100)
@@ -130,7 +112,7 @@ class Payment(models.Model):
         ordering = ('-timestamp',)
 
     def __str__(self):
-        return self.stripe_charge_id
+        return str(self.stripe_customer_id)
     
 class MembershipForm(models.Model):
     country = CountryField(multiple=False, blank_label='(select country)')
@@ -139,7 +121,7 @@ class MembershipForm(models.Model):
     last_name = models.CharField(max_length=50)
     gender = models.CharField(choices=SEX,default="G", max_length=1)
     date_of_birth = models.DateField()
-    phone_number = models.CharField(max_length=50, blank=True, default='')
+    phone_number = models.CharField(max_length=50)
     mobile_number = models.CharField(max_length=50)
     postal_code = models.CharField(max_length=10)
     city = models.CharField(max_length=50)
@@ -159,10 +141,3 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.name
-
-# def userprofile_receiver(sender, instance, created, *args, **kwargs):
-#     if created:
-#         userprofile = UserProfile.objects.create(user=instance)
-
-
-# post_save.connect(userprofile_receiver, sender=settings.AUTH_USER_MODEL)

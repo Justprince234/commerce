@@ -64,7 +64,6 @@ INSTALLED_APPS = [
     'cloudinary_storage',
 
     #My Apps
-    'accounts.apps.AccountsConfig',
     'store.apps.StoreConfig',
 ]
 
@@ -107,8 +106,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 SITE_ID = 1
-
-AUTH_USER_MODEL = 'accounts.User'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases

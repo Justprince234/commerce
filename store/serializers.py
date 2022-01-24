@@ -1,11 +1,16 @@
+from itertools import product
 from django.db import models
 from django.db.models import fields
 from rest_framework import serializers
-from .models import Category,Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, Coupon
+from .models import Category,Product, Cart, Order, Payment, MembershipForm, Contact
 
 from rest_framework.fields import CurrentUserDefault
 from django_countries.serializer_fields import CountryField
 
+
+class StringSerializer(serializers.StringRelatedField):
+    def to_internal_value(self, value):
+        return value
 
 # Product Serializer
 class ProductSerializer(serializers.ModelSerializer):
@@ -25,30 +30,17 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
-    def get_category(self, obj):
-        return obj.get_category_display()
-
-    def get_label(self, obj):
-        return obj.get_label_display()
-
-# Checkout Address Serializer
-class CheckoutAddressSerializer(serializers.ModelSerializer):
-    country = CountryField()
-    class Meta:
-        model = CheckoutAddress
-        fields = '__all__'
-
-class OrderProductSerializer(serializers.ModelSerializer):
-    product =  ProductCartSerializer()
-    get_total_product_price = serializers.IntegerField(read_only=True)
-    get_final_price = serializers.IntegerField(read_only=True)
+class CartSerializer(serializers.ModelSerializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    total_product_price = serializers.SerializerMethodField()
+    final_price = serializers.SerializerMethodField()
 
     class Meta:
-        model = OrderProduct
+        model = Cart
         fields = '__all__'
 
     def get_product(self, obj):
-        return ProductSerializer(obj.product).data
+        return ProductCartSerializer(obj.product).data
 
     def get_total_product_price(self, obj):
         return obj.get_total_product_price()
@@ -57,21 +49,19 @@ class OrderProductSerializer(serializers.ModelSerializer):
         return obj.get_final_price()
 
 class OrderSerializer(serializers.ModelSerializer):
-    products =  OrderProductSerializer(many=True)
+    products = serializers.PrimaryKeyRelatedField(queryset=Cart.objects.all(), many=True)
+    total = serializers.SerializerMethodField()
+
     class Meta:
         model = Order
         fields = '__all__'
 
-    def get_order_items(self, obj):
-        return OrderProductSerializer(obj.products.all(), many=True).data
+    def get_order_products(self, obj):
+        return CartSerializer(obj.products.all(), many=True).data
 
-    def get_total_price(self, obj):
+    def get_total(self, obj):
         return obj.get_total_price()
 
-    def get_coupon(self, obj):
-        if obj.coupon is not None:
-            return CouponSerializer(obj.coupon).data
-        return None
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -86,9 +76,4 @@ class MembershipFormSerializer(serializers.ModelSerializer):
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
-        fields = '__all__'
-
-class CouponSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Coupon
         fields = '__all__'

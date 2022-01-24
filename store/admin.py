@@ -3,11 +3,9 @@ from django.contrib import admin
 from .models import (
     Category,
     Product, 
-    OrderProduct, 
+    Cart, 
     Order,
-    CheckoutAddress,
     Payment,
-    Coupon,
     MembershipForm,
     Contact,
     UserProfile,
@@ -37,38 +35,25 @@ class ProductAdmin(admin.ModelAdmin):
 
 admin.site.register(Product, ProductAdmin)
 
-class OrderProductAdmin(admin.ModelAdmin):
+class CartAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'product', 'quantity', 'ordered')
-    list_display_links = ('id', )
-    search_fields = ('product',)
+    list_display = ('id','product', 'quantity', 'ordered')
     list_per_page = 25
 
-admin.site.register(OrderProduct, OrderProductAdmin)
+admin.site.register(Cart, CartAdmin)
 
 class OrderAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'first_name', 'last_name', 'phone', 'email', 'ordered_date', 'ordered', 'checkout_address', 'payment')
+    list_display = ('id', 'first_name', 'last_name', 'shipping_address', 'ordered')
     list_display_links = ('id', 'first_name')
     search_fields = ('first_name',)
     list_per_page = 25
 
 admin.site.register(Order, OrderAdmin)
 
-class CheckoutAddressAdmin(admin.ModelAdmin):
-
-    list_display = ('id', 'apartment_number', 'street_address', 'state', 'country', 'zip')
-    list_display_links = ('id', 'street_address')
-    search_fields = ('street_address',)
-    list_per_page = 25
-
-admin.site.register(CheckoutAddress, CheckoutAddressAdmin)
-
 class PaymentAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'stripe_charge_id', 'amount')
-    list_display_links = ('id', 'stripe_charge_id')
-    search_fields = ('stripe_charge_id',)
+    list_display = ('id','stripe_charge_id', 'amount')
     list_per_page = 25
 
 admin.site.register(Payment, PaymentAdmin)
@@ -92,4 +77,3 @@ class ContactAdmin(admin.ModelAdmin):
 admin.site.register(Contact, ContactAdmin)
 
 admin.site.register(UserProfile)
-admin.site.register(Coupon)

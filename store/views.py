@@ -1,4 +1,3 @@
-from logging import raiseExceptions
 from django.db.models import query
 from django.db.models import Q
 from django.http.response import Http404
@@ -7,13 +6,13 @@ from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Category, Product, OrderProduct, Order, CheckoutAddress, Payment, MembershipForm, Contact, UserProfile, Coupon
-from store.serializers import CategorySerializer, ProductSerializer, OrderProductSerializer, OrderSerializer, CheckoutAddressSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer
+from .models import Category, Product, Cart, Order, Payment, MembershipForm, Contact, UserProfile
+from store.serializers import CategorySerializer, ProductSerializer, CartSerializer, OrderSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer
 
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
 from django_countries import countries
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_406_NOT_ACCEPTABLE
 from rest_framework.views import APIView
 from rest_framework import status, authentication, permissions
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -24,17 +23,13 @@ from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError, PermissionDenied, NotAcceptable
 from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponse,JsonResponse
+from rest_framework.fields import CurrentUserDefault
 
 # Stripe
 import stripe
 stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
 # import paypalrestsdk
 # import logging
-
-
-class UserIDView(APIView):
-    def get(self, request, *args, **kwargs):
-        return Response({'userID': request.user.id}, status=HTTP_200_OK)
 
 # Create your views here.
 class ListProductApi(APIView):
@@ -80,102 +75,25 @@ def search(request):
     else:
         return Response({'products': []})
 
-# Add to cart
-# class AddToCartView(APIView):
-    # serializer_class = OrderProductSerializer
-    # queryset = OrderProduct.objects.all()
-    # def post(self, request, format=None):
-    #     serializer = self.serializer_class(data=request.data)
-    #     if serializer.is_valid(raise_exception=True):
-    #         product_id = serializer.data.get('temperature')
-    #         description = serializer.data.get('description')
-    #         order_product = OrderProduct(temperature=temperature, description=description)
-    #         order_product.save()
-    #         print(serializer.errors)
-    #         return Response(OrderProductSerializer(order_product).data, status=status.HTTP_201_CREATED)
-            
-
-    #     return Response({'Bad Request': "Invalid Data..."}, status=status.HTTP_400_BAD_REQUEST)
-        
-    # def post(self, request, *args, **kwargs):
-    #     id = request.data.get('id', None)
-    #     if id is None:
-    #         return Response({"message": "Invalid request"}, status=HTTP_400_BAD_REQUEST)
-
-    #     product = get_object_or_404(Product, id=id)
-
-    #     order_item_qs = OrderProduct.objects.filter(
-    #         product=product,
-    #         ordered=False
-    #     )
-    #     if order_item_qs.exists():
-    #         order_item = order_item_qs.first()
-    #         order_item.quantity += 1
-    #         order_item.save()
-    #     else:
-    #         order_item = OrderProduct.objects.create(
-    #             product=product,
-    #             ordered=False
-    #         )
-    #         order_item.save()
-
-    #     order_qs = Order.objects.filter(ordered=False)
-    #     if order_qs.exists():
-    #         order = order_qs[0]
-    #         if not order.products.filter(item__id=order_item.id).exists():
-    #             order.products.add(order_item)
-    #             return Response(status=HTTP_200_OK)
-
-    #     else:
-    #         ordered_date = timezone.now()
-    #         order = Order.objects.create(ordered_date=ordered_date)
-    #         order.products.add(order_item)
-    #         return Response(status=HTTP_200_OK)
-
 class CountryListView(APIView):
     def get(self, request, *args, **kwargs):
         return Response(countries, status=HTTP_200_OK)
 
-class CheckoutAddressListView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated, )
-    serializer_class = CheckoutAddressSerializer
-
-    def get_queryset(self):
-        qs = CheckoutAddress.objects.all()
-        return qs.filter(user=self.request.user)
-
-
-class CheckoutAddressCreateView(generics.CreateAPIView):
-    permission_classes = (IsAuthenticated, )
-    serializer_class = CheckoutAddressSerializer
-    queryset = CheckoutAddress.objects.all()
-
-
-class CheckoutAddressUpdateView(generics.UpdateAPIView):
-    permission_classes = (IsAuthenticated, )
-    serializer_class = CheckoutAddressSerializer
-    queryset = CheckoutAddress.objects.all()
-
-
-class CheckoutAddressDeleteView(generics.DestroyAPIView):
-    permission_classes = (IsAuthenticated, )
-    queryset = CheckoutAddress.objects.all()
-
 # Order
 class OrderQuantityUpdateView(APIView):
     def post(self, request, *args, **kwargs):
-        slug = request.data.get('slug', None)
-        if slug is None:
+        id = request.data.get('id', None)
+        if id is None:
             return Response({"message": "Invalid data"}, status=HTTP_400_BAD_REQUEST)
-        product = get_object_or_404(Product, slug=slug)
+        product = get_object_or_404(Product, id=id)
         order_qs = Order.objects.filter(
             ordered=False
         )
         if order_qs.exists():
             order = order_qs[0]
             # check if the order item is in the order
-            if order.products.filter(product__slug=product.slug).exists():
-                order_item = OrderProduct.objects.filter(
+            if order.products.filter(product__id=product.id).exists():
+                order_item = Cart.objects.filter(
                     product=product,
                     ordered=False
                 )[0]
@@ -192,19 +110,14 @@ class OrderQuantityUpdateView(APIView):
 
 
 class OrderItemDeleteView(generics.DestroyAPIView):
-    queryset = OrderProduct.objects.all()
+    queryset = Cart.objects.all()
     
-
-class OrderDetailView(generics.RetrieveAPIView):
-    serializer_class = OrderSerializer
-
-    def get_object(self):
-        try:
-            order = Order.objects.get(ordered=False)
-            return order
-        except ObjectDoesNotExist:
-            raise Http404("You do not have an active order")
-            # return Response({"message": "You do not have an active order"}, status=HTTP_400_BAD_REQUEST)
+class OrderDetailView(APIView):
+    """List all of the products in the Products table."""
+    def get(self, request, format=None):
+        products = Order.objects.all()
+        serializer = OrderSerializer(products, many=True)
+        return Response(serializer.data, status=HTTP_200_OK)
 
 #Checkout
 class PaymentView(APIView):
@@ -213,9 +126,6 @@ class PaymentView(APIView):
         order = Order.objects.get(ordered=False)
         userprofile = UserProfile.objects.all()
         token = request.data.get('stripeToken')
-        checkout_address_id = request.data.get('selectedCheckoutAddress')
-
-        shipping_address = CheckoutAddress.objects.get(id=checkout_address_id)
 
         if userprofile.stripe_customer_id != '' and userprofile.stripe_customer_id is not None:
             customer = stripe.Customer.retrieve(
@@ -224,40 +134,39 @@ class PaymentView(APIView):
 
         else:
             customer = stripe.Customer.create(
-                email=self.request.order.email,
+                name=self.request.order.first_name,
             )
             customer.sources.create(source=token)
             userprofile.stripe_customer_id = customer['id']
             userprofile.one_click_purchasing = True
             userprofile.save()
 
-        amount = int(order.get_final_price() * 100)
+        amount = int(order.get_total() * 100)
 
         try:
-
                 # charge the customer because we cannot charge the token more than once
             charge = stripe.Charge.create(
                 amount=amount,  # cents
+                description = "Direshop777 Charge",
                 currency="usd",
-                description='Charge from Direshop777 Store',
                 customer=userprofile.stripe_customer_id
             )
+
             # create the payment
             payment = Payment()
             payment.stripe_charge_id = charge['id']
-            payment.amount = order.get_final_price()
+            payment.amount = order.get_total()
             payment.save()
 
             # assign the payment to the order
 
-            order_items = order.products.all()
+            order_items = order.items.all()
             order_items.update(ordered=True)
             for item in order_items:
                 item.save()
 
             order.ordered = True
             order.payment = payment
-            order.shipping_address = shipping_address
             # order.ref_code = create_ref_code()
             order.save()
 
@@ -296,24 +205,11 @@ class PaymentView(APIView):
             # send an email to ourselves
             return Response({"message": "A serious error occurred. We have been notifed."}, status=HTTP_400_BAD_REQUEST)
 
-        return Response({"message": "Invalid data received"}, status=HTTP_400_BAD_REQUEST)
-
-class AddCouponView(APIView):
-    def post(self, request, *args, **kwargs):
-        code = request.data.get('code', None)
-        if code is None:
-            return Response({"message": "Invalid data received"}, status=HTTP_400_BAD_REQUEST)
-        order = Order.objects.get(ordered=False)
-        coupon = get_object_or_404(Coupon, code=code)
-        order.coupon = coupon
-        order.save()
-        return Response(status=HTTP_200_OK)
-
 class PaymentListView(generics.ListAPIView):
     serializer_class = PaymentSerializer
 
     def get_queryset(self):
-        return Payment.objects.filter(stripe_charge_id=self.request.stripe_charge_id)
+        return Payment.objects.all()
 
 class MembershipFormList(generics.ListCreateAPIView):
     queryset = MembershipForm.objects.all()
@@ -334,25 +230,26 @@ class StripeConfigView(APIView):
         }
         return Response(config)
 
-class cartview(APIView):
-    def post(self,request):
-        serializer=OrderProductSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response({"status":"Success","data":serializer.data},status=status.HTTP_200_OK)
-        return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+# Add to cart
+class CartView(generics.ListCreateAPIView):
+    queryset = Cart.objects.none()
+    serializer_class = CartSerializer
 
-    def get(self, request, id=None):
-        if id:
-            product = Product.objects.get(id=id)
-            serializer = OrderProductSerializer(product)
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    def get_queryset(self):
+        queryset = Cart.objects.all()
+        return queryset
 
-        products = OrderProduct.objects.all()
-        serializer = OrderProductSerializer(products, many=True)
-        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
-
-    def delete(self, request, id=None):
-        product = get_object_or_404(Product, id=id)
-        product.delete()
-        return Response({"status": "success", "data": "Item Deleted"})
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        results =Cart.objects.all()
+        output_serializer = CartSerializer(results, many=True)
+        data = output_serializer.data[:]
+        ordered_date = timezone.now()
+        order = Order.objects.create(ordered_date=ordered_date)
+        for items in data:
+            product = dict(items)
+            products = product["id"]
+        order.products.add(products)
+        return Response(data)
