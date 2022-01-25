@@ -23,7 +23,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError, PermissionDenied, NotAcceptable
 from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponse,JsonResponse
-from rest_framework.fields import CurrentUserDefault
+from rest_framework.authentication import SessionAuthentication
 
 # Stripe
 import stripe
