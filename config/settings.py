@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'cloudinary_storage',
 
     #My Apps
+    'accounts.apps.AccountsConfig',
     'store.apps.StoreConfig',
 ]
 
@@ -104,6 +105,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+
+AUTH_USER_MODEL = 'accounts.User'
 
 SITE_ID = 1
 
@@ -158,7 +161,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        # 'knox.auth.TokenAuthentication',
+        'knox.auth.TokenAuthentication',
     ]
 }
 

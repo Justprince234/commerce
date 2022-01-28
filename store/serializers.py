@@ -31,6 +31,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CartSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
     total_product_price = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
@@ -48,7 +49,13 @@ class CartSerializer(serializers.ModelSerializer):
     def get_final_price(self, obj):
         return obj.get_final_price()
 
+    def save(self, **kwargs):
+        """Include default for read_only `account` field"""
+        kwargs["user"] = self.fields["user"].get_default()
+        return super().save(**kwargs)
+
 class OrderSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     products = serializers.PrimaryKeyRelatedField(queryset=Cart.objects.all(), many=True)
     total = serializers.SerializerMethodField()
 
@@ -61,6 +68,11 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total(self, obj):
         return obj.get_total_price()
+
+    def save(self, **kwargs):
+        """Include default for read_only `account` field"""
+        kwargs["user"] = self.fields["user"].get_default()
+        return super().save(**kwargs)
 
 
 class PaymentSerializer(serializers.ModelSerializer):

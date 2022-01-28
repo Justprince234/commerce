@@ -1,3 +1,4 @@
+
 from django.db.models import query
 from django.db.models import Q
 from django.http.response import Http404
@@ -115,7 +116,7 @@ class OrderItemDeleteView(generics.DestroyAPIView):
 class OrderDetailView(APIView):
     """List all of the products in the Products table."""
     def get(self, request, format=None):
-        products = Order.objects.all()
+        products = Order.objects.filter(user=request.user)
         serializer = OrderSerializer(products, many=True)
         return Response(serializer.data, status=HTTP_200_OK)
 
@@ -232,22 +233,23 @@ class StripeConfigView(APIView):
 
 # Add to cart
 class CartView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated] 
     queryset = Cart.objects.none()
     serializer_class = CartSerializer
 
     def get_queryset(self):
-        queryset = Cart.objects.all()
+        queryset = Cart.objects.filter(user=self.request.user)
         return queryset
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        results =Cart.objects.all()
+        results =Cart.objects.filter(user=request.user)
         output_serializer = CartSerializer(results, many=True)
         data = output_serializer.data[:]
         ordered_date = timezone.now()
-        order = Order.objects.create(ordered_date=ordered_date)
+        order = Order.objects.create(user=request.user, ordered_date=ordered_date)
         for items in data:
             product = dict(items)
             products = product["id"]

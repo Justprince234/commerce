@@ -37,23 +37,23 @@ admin.site.register(Product, ProductAdmin)
 
 class CartAdmin(admin.ModelAdmin):
 
-    list_display = ('id','product', 'quantity', 'ordered')
+    list_display = ('id','user', 'ordered')
     list_per_page = 25
 
 admin.site.register(Cart, CartAdmin)
 
 class OrderAdmin(admin.ModelAdmin):
 
-    list_display = ('id', 'first_name', 'last_name', 'shipping_address', 'ordered')
-    list_display_links = ('id', 'first_name')
-    search_fields = ('first_name',)
+    list_display = ('id','user', 'shipping_address', 'country', 'ordered')
+    list_display_links = ('id', 'user')
+    search_fields = ('user',)
     list_per_page = 25
 
 admin.site.register(Order, OrderAdmin)
 
 class PaymentAdmin(admin.ModelAdmin):
 
-    list_display = ('id','stripe_charge_id', 'amount')
+    list_display = ('id', 'user', 'stripe_charge_id', 'amount')
     list_per_page = 25
 
 admin.site.register(Payment, PaymentAdmin)

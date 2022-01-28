@@ -1,4 +1,5 @@
 from datetime import date
+from email.policy import default
 from django.db import models
 from django.db.models.base import Model
 from django_countries.fields import CountryField
@@ -6,6 +7,7 @@ from django.urls import reverse
 from  django.conf import settings
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from django.conf import settings
 
 # Create your models here.
 
@@ -16,11 +18,12 @@ SEX = (
 )
 
 class UserProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     stripe_customer_id = models.CharField(max_length=100, blank=True, null=True)
     one_click_purchasing = models.BooleanField(default=False)
 
     def __str__(self):
-        return str(self.stripe_customer_id)
+        return str(self.user)
 
 class Category(models.Model):
     """Creates a database instance of Category in database."""
@@ -59,6 +62,7 @@ class Product(models.Model):
 
 class Cart(models.Model):
     """Creates a database instance OrderItem in database."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
@@ -77,17 +81,16 @@ class Cart(models.Model):
         return self.get_total_product_price()
 
 class Order(models.Model):
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
-    phone_number = models.CharField(max_length=50, blank=True, default='')
-    email = models.EmailField(verbose_name='email', max_length=60, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     products = models.ManyToManyField(Cart)
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField()
     ordered = models.BooleanField(default=False)
-    shipping_address = models.CharField(max_length=100)
-    country = CountryField(multiple=False, blank_label='(select country)')
-    zip = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    gender = models.CharField(choices=SEX,default="G", max_length=1, blank=True, null=True)
+    shipping_address = models.CharField(max_length=100, blank=True, null=True)
+    country = CountryField(multiple=False, blank_label='(select country)', default="US")
+    zip = models.CharField(max_length=100, blank=True, null=True)
     payment = models.ForeignKey('Payment', on_delete=models.SET_NULL, blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
 
@@ -95,7 +98,7 @@ class Order(models.Model):
         ordering = ('-date',)
 
     def __str__(self):
-        return str(self.first_name)
+        return str(self.user)
     
     def get_total_price(self):
         total = 0
@@ -104,6 +107,7 @@ class Order(models.Model):
         return total
 
 class Payment(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True)
     stripe_charge_id = models.CharField(max_length=100)
     amount = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -141,3 +145,10 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.name
+
+def userprofile_receiver(sender, instance, created, *args, **kwargs):
+    if created:
+        userprofile = UserProfile.objects.create(user=instance)
+
+
+post_save.connect(userprofile_receiver, sender=settings.AUTH_USER_MODEL)
