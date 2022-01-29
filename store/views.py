@@ -80,7 +80,51 @@ class CountryListView(APIView):
     def get(self, request, *args, **kwargs):
         return Response(countries, status=HTTP_200_OK)
 
+# Add to cart
+class CartView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated] 
+    queryset = Cart.objects.none()
+    serializer_class = CartSerializer
+
+    def get_queryset(self):
+        queryset = Cart.objects.filter(user=self.request.user)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        results =Cart.objects.filter(user=request.user)
+        output_serializer = CartSerializer(results, many=True)
+        data = output_serializer.data[:]
+        ordered_date = timezone.now()
+        order = Order.objects.create(user=request.user, ordered_date=ordered_date)
+        for items in data:
+            product = dict(items)
+            products = product["id"]
+        order.products.add(products)
+        return Response(data)
+
 # Order
+class OrderDetailView(APIView):
+    """List all of the products in the Products table."""
+    def get(self, request, format=None):
+        products = Order.objects.filter(user=request.user)
+        serializer = OrderSerializer(products, many=True)
+        return Response(serializer.data, status=HTTP_200_OK)
+
+# class OrderDetailView(generics.RetrieveAPIView):
+#     serializer_class = OrderSerializer
+#     permission_classes = (IsAuthenticated,)
+
+#     def get_object(self):
+#         try:
+#             order = Order.objects.get(user=self.request.user, ordered=False)
+#             return order
+#         except ObjectDoesNotExist:
+#             raise Http404("You do not have an active order")
+
+
 class OrderQuantityUpdateView(APIView):
     def post(self, request, *args, **kwargs):
         id = request.data.get('id', None)
@@ -113,19 +157,13 @@ class OrderQuantityUpdateView(APIView):
 class OrderItemDeleteView(generics.DestroyAPIView):
     queryset = Cart.objects.all()
     
-class OrderDetailView(APIView):
-    """List all of the products in the Products table."""
-    def get(self, request, format=None):
-        products = Order.objects.filter(user=request.user)
-        serializer = OrderSerializer(products, many=True)
-        return Response(serializer.data, status=HTTP_200_OK)
 
 #Checkout
 class PaymentView(APIView):
 
     def post(self, request, *args, **kwargs):
-        order = Order.objects.get(ordered=False)
-        userprofile = UserProfile.objects.all()
+        order = Order.objects.get(user=self.request.user, ordered=False)
+        userprofile = UserProfile.objects.get(user=self.request.user)
         token = request.data.get('stripeToken')
 
         if userprofile.stripe_customer_id != '' and userprofile.stripe_customer_id is not None:
@@ -135,7 +173,7 @@ class PaymentView(APIView):
 
         else:
             customer = stripe.Customer.create(
-                name=self.request.order.first_name,
+                email=self.request.user.email,
             )
             customer.sources.create(source=token)
             userprofile.stripe_customer_id = customer['id']
@@ -145,17 +183,18 @@ class PaymentView(APIView):
         amount = int(order.get_total() * 100)
 
         try:
-                # charge the customer because we cannot charge the token more than once
+            # charge the customer because we cannot charge the token more than once
             charge = stripe.Charge.create(
                 amount=amount,  # cents
-                description = "Direshop777 Charge",
+                description="Direshop777 Charge.",
                 currency="usd",
                 customer=userprofile.stripe_customer_id
             )
-
+            
             # create the payment
             payment = Payment()
             payment.stripe_charge_id = charge['id']
+            payment.user = self.request.user
             payment.amount = order.get_total()
             payment.save()
 
@@ -168,7 +207,6 @@ class PaymentView(APIView):
 
             order.ordered = True
             order.payment = payment
-            # order.ref_code = create_ref_code()
             order.save()
 
             return Response(status=HTTP_200_OK)
@@ -230,28 +268,3 @@ class StripeConfigView(APIView):
             "publishable_key": str(settings.STRIPE_TEST_PUBLIC_KEY)
         }
         return Response(config)
-
-# Add to cart
-class CartView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated] 
-    queryset = Cart.objects.none()
-    serializer_class = CartSerializer
-
-    def get_queryset(self):
-        queryset = Cart.objects.filter(user=self.request.user)
-        return queryset
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        results =Cart.objects.filter(user=request.user)
-        output_serializer = CartSerializer(results, many=True)
-        data = output_serializer.data[:]
-        ordered_date = timezone.now()
-        order = Order.objects.create(user=request.user, ordered_date=ordered_date)
-        for items in data:
-            product = dict(items)
-            products = product["id"]
-        order.products.add(products)
-        return Response(data)
