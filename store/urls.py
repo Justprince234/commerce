@@ -7,8 +7,7 @@ from .views import (
     PaymentListView,
     StripeConfigView,
     OrderQuantityUpdateView,
-    CartView,
-    PaymentView
+    CartView
 )
 
 app_name = 'store'
@@ -29,5 +28,5 @@ urlpatterns = [
     path('membershipform/', views.MembershipFormList.as_view()),
     path('contactlist/', views.ContactList.as_view()),
     path('cart-item/', CartView.as_view(), name='cart-item'),
-    path('checkout/', PaymentView.as_view(), name='checkout')
+    path('checkout/', views.checkout, name='checkout'),
 ]

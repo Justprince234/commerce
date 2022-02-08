@@ -1,5 +1,4 @@
 from datetime import date
-from email.policy import default
 from django.db import models
 from django.db.models.base import Model
 from django_countries.fields import CountryField
@@ -91,6 +90,7 @@ class Order(models.Model):
     shipping_address = models.CharField(max_length=100, blank=True, null=True)
     country = CountryField(multiple=False, blank_label='(select country)', default="US")
     zip = models.CharField(max_length=100, blank=True, null=True)
+    stripe_charge_id = models.CharField(max_length=100, blank=True, null=True)
     payment = models.ForeignKey('Payment', on_delete=models.SET_NULL, blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
 
