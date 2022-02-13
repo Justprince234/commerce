@@ -82,8 +82,6 @@ class Cart(models.Model):
 class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     products = models.ManyToManyField(Cart)
-    start_date = models.DateTimeField(auto_now_add=True)
-    ordered_date = models.DateTimeField()
     ordered = models.BooleanField(default=False)
     phone = models.CharField(max_length=20, blank=True, null=True)
     gender = models.CharField(choices=SEX,default="G", max_length=1, blank=True, null=True)

@@ -28,5 +28,5 @@ urlpatterns = [
     path('membershipform/', views.MembershipFormList.as_view()),
     path('contactlist/', views.ContactList.as_view()),
     path('cart-item/', CartView.as_view(), name='cart-item'),
-    path('checkout/', views.checkout, name='checkout'),
+    path('checkout/', views.checkout, name='checkout')
 ]

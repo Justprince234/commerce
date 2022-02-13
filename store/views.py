@@ -97,8 +97,7 @@ class CartView(generics.ListCreateAPIView):
         results =Cart.objects.filter(user=request.user)
         output_serializer = CartSerializer(results, many=True)
         data = output_serializer.data[:]
-        ordered_date = timezone.now()
-        order = Order.objects.create(user=request.user, ordered_date=ordered_date)
+        order = Order.objects.create(user=request.user)
         for items in data:
             product = dict(items)
             products = product["id"]
@@ -109,8 +108,8 @@ class CartView(generics.ListCreateAPIView):
 class OrderDetailView(APIView):
     """List all of the products in the Products table."""
     def get(self, request, format=None):
-        products = Order.objects.filter(user=request.user)
-        serializer = OrderSerializer(products, many=True)
+        orders = Order.objects.filter(user=request.user)
+        serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data, status=HTTP_200_OK)
 
 # class OrderDetailView(generics.RetrieveAPIView):
@@ -168,7 +167,7 @@ def checkout(request):
 
     if serializer.is_valid():
         stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
-        amount = int(order.get_total() * 100)
+        amount = int(order.get_total_price() * 100)
 
         try:
             charge = stripe.Charge.create(
@@ -183,7 +182,7 @@ def checkout(request):
             payment = Payment()
             payment.stripe_charge_id = charge['id']
             payment.user = request.user
-            payment.amount = order.get_total()
+            payment.amount = order.get_total_price()
             payment.save()
 
             # assign the payment to the order
@@ -202,90 +201,55 @@ def checkout(request):
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# class PaymentView(APIView):
+# class PaymentView(generics.ListCreateAPIView):
+#     permission_classes = [IsAuthenticated] 
+#     queryset = Order.objects.none
+#     serializer_class = OrderSerializer
+
+#     def get_queryset(self):
+#         queryset = Order.objects.filter(user=self.request.user, ordered=False)
+#         return queryset
 
 #     def post(self, request, *args, **kwargs):
-#         order = Order.objects.get(user=self.request.user, ordered=False)
-#         userprofile = UserProfile.objects.get(user=self.request.user)
-#         token = request.data.get('stripeToken')
-
-#         if userprofile.stripe_customer_id != '' and userprofile.stripe_customer_id is not None:
-#             customer = stripe.Customer.retrieve(
-#                 userprofile.stripe_customer_id)
-#             customer.sources.create(source=token)
-
-#         else:
-#             customer = stripe.Customer.create(
-#                 email=self.request.user.email,
-#             )
-#             customer.sources.create(source=token)
-#             userprofile.stripe_customer_id = customer['id']
-#             userprofile.one_click_purchasing = True
-#             userprofile.save()
-
-#         amount = int(order.get_total() * 100)
-
+#         serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
+#         serializer.is_valid(raise_exception=True)
+#         self.perform_create(serializer)
+#         orders =Order.objects.filter(user=request.user, ordered=False)
+#         output_serializer = OrderSerializer(orders, many=True)
+#         # data = output_serializer.data[:]
+#         stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
+#         total = orders.get_total_price()
+#         amount = int(total* 100)
 #         try:
 #             # charge the customer because we cannot charge the token more than once
 #             charge = stripe.Charge.create(
 #                 amount=amount,  # cents
-#                 description="Direshop777 Charge.",
-#                 currency="usd",
-#                 customer=userprofile.stripe_customer_id
+#                 description='Charge from Direshop777',
+#                 currency='usd',
+#                 source=serializer.validated_data['stripe_charge_id']
 #             )
             
 #             # create the payment
 #             payment = Payment()
 #             payment.stripe_charge_id = charge['id']
 #             payment.user = self.request.user
-#             payment.amount = order.get_total()
+#             payment.amount = orders.get_total_price()
 #             payment.save()
 
 #             # assign the payment to the order
-
-#             order_items = order.items.all()
+#             order_items = orders.products.all()
 #             order_items.update(ordered=True)
 #             for item in order_items:
 #                 item.save()
 
-#             order.ordered = True
-#             order.payment = payment
-#             order.save()
+#             orders.ordered = True
+#             orders.payment = payment
+#             orders.save()
 
-#             return Response(status=HTTP_200_OK)
-
-#         except stripe.error.CardError as e:
-#             body = e.json_body
-#             err = body.get('error', {})
-#             return Response({"message": f"{err.get('message')}"}, status=HTTP_400_BAD_REQUEST)
-
-#         except stripe.error.RateLimitError as e:
-#             # Too many requests made to the API too quickly
-#             messages.warning(self.request, "Rate limit error")
-#             return Response({"message": "Rate limit error"}, status=HTTP_400_BAD_REQUEST)
-
-#         except stripe.error.InvalidRequestError as e:
-#             print(e)
-#             # Invalid parameters were supplied to Stripe's API
-#             return Response({"message": "Invalid parameters"}, status=HTTP_400_BAD_REQUEST)
-
-#         except stripe.error.AuthenticationError as e:
-#             # Authentication with Stripe's API failed
-#             # (maybe you changed API keys recently)
-#             return Response({"message": "Not authenticated"}, status=HTTP_400_BAD_REQUEST)
-
-#         except stripe.error.APIConnectionError as e:
-#             # Network communication with Stripe failed
-#             return Response({"message": "Network error"}, status=HTTP_400_BAD_REQUEST)
-
-#         except stripe.error.StripeError as e:
-#             # Display a very generic error to the user, and maybe send
-#             # yourself an email
-#             return Response({"message": "Something went wrong. You were not charged. Please try again."}, status=HTTP_400_BAD_REQUEST)
-
-#         except Exception as e:
-#             # send an email to ourselves
-#             return Response({"message": "A serious error occurred. We have been notifed."}, status=HTTP_400_BAD_REQUEST)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+#         except Exception:
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PaymentListView(generics.ListAPIView):
     serializer_class = PaymentSerializer
