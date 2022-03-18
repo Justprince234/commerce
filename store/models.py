@@ -7,6 +7,8 @@ from  django.conf import settings
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.conf import settings
+from mptt.models import MPTTModel
+from mptt.fields import TreeForeignKey
 
 # Create your models here.
 
@@ -24,13 +26,17 @@ class UserProfile(models.Model):
     def __str__(self):
         return str(self.user)
 
-class Category(models.Model):
+class Category(MPTTModel):
     """Creates a database instance of Category in database."""
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True)
 
     class Meta:
         verbose_name_plural = "Categories"
+
+    class MPTTMeta:
+        order_insertion_by=['name']
 
     def __str__(self):
         return self.name
@@ -58,9 +64,28 @@ class Product(models.Model):
     def get_absolute_url(self):
         return f'/{self.category.slug}/{self.slug}/'
 
+class ProductReview(models.Model):
+    product = models.ForeignKey(Product, related_name='reviews', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='reviews', on_delete=models.CASCADE)
+
+    content = models.TextField(blank=True, null=True)
+    stars = models.IntegerField()
+
+    date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-date',)
+
+class Subscriber(models.Model):
+    email = models.EmailField(max_length=255)
+    date_added = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '%s' % self.email
+
 
 class Cart(models.Model):
-    """Creates a database instance OrderItem in database."""
+    """Creates a database instance of Cart in database."""
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -68,10 +93,10 @@ class Cart(models.Model):
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ('-date',)
+        ordering = ['user', '-date']
 
     def __str__(self):
-        return f"{self.quantity} of {self.product.name}"
+        return f'{self.user}'
         
     def get_total_product_price(self):
         return self.quantity * self.product.price

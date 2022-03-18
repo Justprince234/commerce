@@ -6,16 +6,21 @@ from .views import (
     OrderItemDeleteView,
     PaymentListView,
     StripeConfigView,
-    OrderQuantityUpdateView,
-    CartView
+    OrderQuantityUpdateView
 )
 
 app_name = 'store'
 
 urlpatterns = [
-    path('product/<slug:category_slug>/<slug:product_slug>/', views.ProductDetail.as_view()),
-    path('product/<slug:category_slug>/', views.CategoryDetail.as_view()),
-    path('products/', views.ListProductApi.as_view()),
+    path('categories/', views.ListCategory.as_view(), name='categories'),
+    path('categories/<int:pk>/', views.DetailCategory.as_view(), name='singlecategory'),
+
+    path('products/', views.ListProduct.as_view(), name='products'),
+    path('products/<int:pk>/', views.DetailProduct.as_view(), name='singleproduct'),
+
+    path('carts/', views.CartView.as_view(), name='allcarts'),
+    path('carts/<int:pk>/', views.DetailCart.as_view(), name='cartdetail'),
+
     path('products/search/', views.search),
     path('countries/', CountryListView.as_view(), name='country-list'),
     path('order-summary/', OrderDetailView.as_view(), name='order-summary'),
@@ -27,6 +32,7 @@ urlpatterns = [
     path('payments/', PaymentListView.as_view(), name='payment-list'),
     path('membershipform/', views.MembershipFormList.as_view()),
     path('contactlist/', views.ContactList.as_view()),
-    path('cart-item/', CartView.as_view(), name='cart-item'),
+    # path('cart-item/', CartView.as_view(), name='cart-item'),
+    # path('carts/', views.ListCart.as_view(), name='carts'),
     path('checkout/', views.checkout, name='checkout')
 ]

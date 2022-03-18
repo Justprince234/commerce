@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_countries',
     'drf_yasg',
+    'mptt',
 
     # Media Cloudinary
     'cloudinary',

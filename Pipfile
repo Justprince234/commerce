@@ -61,6 +61,8 @@ django-countries = "*"
 paypalrestsdk = "*"
 braintree = "*"
 stripe = "*"
+django-mptt = "*"
+djangorestframework-recursive = "*"
 
 [dev-packages]
 

@@ -1,11 +1,11 @@
-from itertools import product
 from django.db import models
 from django.db.models import fields
 from rest_framework import serializers
 from .models import Category,Product, Cart, Order, Payment, MembershipForm, Contact
-
+from rest_framework_recursive.fields import RecursiveField
 from rest_framework.fields import CurrentUserDefault
 from django_countries.serializer_fields import CountryField
+from accounts.models import User
 
 
 class StringSerializer(serializers.StringRelatedField):
@@ -25,6 +25,7 @@ class ProductCartSerializer(serializers.ModelSerializer):
 
 # Category Serializer
 class CategorySerializer(serializers.ModelSerializer):
+    children = RecursiveField(many=True)
     products = ProductSerializer(many=True)
     class Meta:
         model = Category

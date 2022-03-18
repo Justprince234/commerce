@@ -10,6 +10,7 @@ from django.conf import settings
 from .models import Category, Product, Cart, Order, Payment, MembershipForm, Contact, UserProfile
 from store.serializers import CategorySerializer, ProductSerializer, CartSerializer, OrderSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer
 
+from rest_framework import viewsets
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
 from django_countries import countries
@@ -33,36 +34,30 @@ stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
 # import logging
 
 # Create your views here.
-class ListProductApi(APIView):
-    """List all of the products in the Products table."""
-    def get(self, request, format=None):
-        products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data)
+class ListProduct(generics.ListCreateAPIView):    
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
 
-class ProductDetail(APIView):
-    def get_object_or_404(self, category_slug, product_slug):
-        try:
-            return Product.objects.filter(category__slug=category_slug).get(slug=product_slug)
-        except Product.DoesNotExist:
-            return Http404
+class DetailProduct(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
 
-    def get(self, request, category_slug, product_slug, format=None):
-        product = self.get_object_or_404(category_slug, product_slug)
-        serializer = ProductSerializer(product)
-        return Response(serializer.data)
+class ListCategory(generics.ListCreateAPIView):
+    queryset = Category.objects.filter(parent__isnull=True)
+    serializer_class = CategorySerializer
 
-class CategoryDetail(APIView):
-    def get_object_or_404(self, category_slug):
-        try:
-            return Category.objects.get(slug=category_slug)
-        except Category.DoesNotExist:
-            return Http404
+class DetailCategory(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
 
-    def get(self, request, category_slug, format=None):
-        category = self.get_object_or_404(category_slug)
-        serializer = CategorySerializer(category)
-        return Response(serializer.data)
+# class ListCart(generics.ListCreateAPIView):
+#     # permission_classes = (permissions.IsAuthenticated,)
+#     queryset = Cart.objects.all()
+#     serializer_class = CartSerializer
+
+class DetailCart(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer 
 
 @api_view(['POST'])
 def search(request):
@@ -103,6 +98,16 @@ class CartView(generics.ListCreateAPIView):
             products = product["id"]
         order.products.add(products)
         return Response(data)
+
+# class ListCart(generics.ListCreateAPIView):
+#     permission_classes = (permissions.IsAuthenticated,)
+#     queryset = Cart.objects.all()
+#     serializer_class = CartSerializer
+
+# class DetailCart(generics.RetrieveUpdateDestroyAPIView):
+#     permission_classes = (permissions.IsAuthenticated,)
+#     queryset = Cart.objects.all()
+#     serializer_class = CartSerializer
 
 # Order
 class OrderDetailView(APIView):
