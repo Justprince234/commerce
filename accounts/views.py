@@ -63,3 +63,11 @@ class UserAPI(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+class UserAPII(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated,]
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        user = self.request.user
+        return user
