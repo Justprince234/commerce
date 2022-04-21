@@ -77,7 +77,7 @@ class CountryListView(APIView):
 
 # Add to cart
 class CartView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated] 
+    # permission_classes = [IsAuthenticated] 
     queryset = Cart.objects.none()
     serializer_class = CartSerializer
 

@@ -33,7 +33,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    product = serializers.SerializerMethodField()
     total_product_price = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
 
@@ -42,7 +42,7 @@ class CartSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_product(self, obj):
-        return ProductCartSerializer(obj.product).data
+        return ProductSerializer(obj.product).data
 
     def get_total_product_price(self, obj):
         return obj.get_total_product_price()
