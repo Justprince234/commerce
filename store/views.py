@@ -155,13 +155,12 @@ class Checkout(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         orders =Order.objects.filter(user=request.user, paid=False)
         total = orders.get_total_price()
-        print(total)
         # amount = int(total* 100)
         try:
             # generate token
             client_token = gateway.client_token.generate()
             # charge the customer because we cannot charge the token more than once
-            result = gateway.transaction.sale({'amount': total, 'payment_method_nonce': nonce, 'options': {'submit_for_settlement': True}})
+            result = gateway.transaction.sale({'amount': str(total), 'payment_method_nonce': nonce, "descriptor": {"name": "DIRESHOP777"}, 'options': {"paypal": {"description": "DIRESHOP777"}, 'submit_for_settlement': True}})
 
             if result.is_success:
                 # mark the order as paid
