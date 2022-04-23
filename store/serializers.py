@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import fields
 from rest_framework import serializers
-from .models import Category,Product, Cart, Order, Payment, MembershipForm, Contact
+from .models import Category,Product, Cart, Order, MembershipForm, Contact
 from rest_framework_recursive.fields import RecursiveField
 from rest_framework.fields import CurrentUserDefault
 from django_countries.serializer_fields import CountryField
@@ -33,7 +33,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
-    product = serializers.SerializerMethodField()
+    product = serializers.SerializerMethodField(read_only=True)
     total_product_price = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
 
@@ -74,12 +74,6 @@ class OrderSerializer(serializers.ModelSerializer):
         """Include default for read_only `account` field"""
         kwargs["user"] = self.fields["user"].get_default()
         return super().save(**kwargs)
-
-
-class PaymentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Payment
-        fields = '__all__'
 
 class MembershipFormSerializer(serializers.ModelSerializer):
     class Meta:

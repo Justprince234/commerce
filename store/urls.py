@@ -4,8 +4,7 @@ from .views import (
     CountryListView,
     OrderDetailView,
     OrderItemDeleteView,
-    PaymentListView,
-    StripeConfigView,
+    BraintreeConfigView,
     OrderQuantityUpdateView
 )
 
@@ -28,8 +27,7 @@ urlpatterns = [
         OrderItemDeleteView.as_view(), name='order-item-delete'),
     path('update-quantity/',
         OrderQuantityUpdateView.as_view(), name='order-item-update-quantity'),
-    path('stripe-config/', StripeConfigView.as_view(), name='stripe-config'),
-    path('payments/', PaymentListView.as_view(), name='payment-list'),
+    path('braintree-config/', BraintreeConfigView.as_view(), name='stripe-config'),
     path('membershipform/', views.MembershipFormList.as_view()),
     path('contactlist/', views.ContactList.as_view()),
     # path('cart-item/', CartView.as_view(), name='cart-item'),

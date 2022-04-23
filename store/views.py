@@ -7,8 +7,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Category, Product, Cart, Order, Payment, MembershipForm, Contact, UserProfile
-from store.serializers import CategorySerializer, ProductSerializer, CartSerializer, OrderSerializer, PaymentSerializer, MembershipFormSerializer, ContactSerializer
+from .models import Category, Product, Cart, Order, MembershipForm, Contact, UserProfile
+from store.serializers import CategorySerializer, ProductSerializer, CartSerializer, OrderSerializer, MembershipFormSerializer, ContactSerializer
 
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -27,11 +27,12 @@ from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponse,JsonResponse
 from rest_framework.authentication import SessionAuthentication
 
-# Stripe
-import stripe
-stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
-# import paypalrestsdk
-# import logging
+# Braintree
+import braintree
+
+# instantiate Braintree payment gateway
+gateway = braintree.BraintreeGateway(settings.BRAINTREE_CONF)
+
 
 # Create your views here.
 class ListProduct(generics.ListCreateAPIView):    
@@ -77,7 +78,7 @@ class CountryListView(APIView):
 
 # Add to cart
 class CartView(generics.ListCreateAPIView):
-    # permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated] 
     queryset = Cart.objects.none()
     serializer_class = CartSerializer
 
@@ -98,6 +99,35 @@ class CartView(generics.ListCreateAPIView):
             products = product["id"]
         order.products.add(products)
         return Response(data)
+
+# Cart
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def checkout(request):
+    serializer = OrderSerializer(data=request.data)
+
+    if serializer.is_valid():
+        nonce = request.POST.get('payment_method_nonce', None)
+        paid_amount = sum(item.get('quantity') * item.get('product').price for item in serializer.validated_data['products'])
+
+        try:
+            result = gateway.transaction.sale({'amount': paid_amount, 'payment_method_nonce': nonce, 'options': {'submit_for_settlement': True}})
+
+            if result.is_success:
+                # mark the order as paid
+                order = Order()
+                order.paid = True
+                # store the unique transaction id
+                order.braintree_charge_id = result.transaction.id
+                order.save()
+
+            serializer.save(user=request.user, paid_amount=paid_amount)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class ListCart(generics.ListCreateAPIView):
 #     permission_classes = (permissions.IsAuthenticated,)
@@ -163,48 +193,7 @@ class OrderItemDeleteView(generics.DestroyAPIView):
     
 
 #Checkout
-@api_view(['POST'])
-@authentication_classes([authentication.TokenAuthentication])
-@permission_classes([permissions.IsAuthenticated])
-def checkout(request):
-    serializer = OrderSerializer(data=request.data)
-    order = Order.objects.get(user=request.user, ordered=False)
 
-    if serializer.is_valid():
-        stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
-        amount = int(order.get_total_price() * 100)
-
-        try:
-            charge = stripe.Charge.create(
-                amount=amount,
-                currency='USD',
-                description='Charge from Direshop777',
-                source=serializer.validated_data['stripe_charge_id']
-            )
-
-            serializer.save(user=request.user)
-            # create the payment
-            payment = Payment()
-            payment.stripe_charge_id = charge['id']
-            payment.user = request.user
-            payment.amount = order.get_total_price()
-            payment.save()
-
-            # assign the payment to the order
-            order_items = order.items.all()
-            order_items.update(ordered=True)
-            for item in order_items:
-                item.save()
-
-            order.ordered = True
-            order.payment = payment
-            order.save()
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class PaymentView(generics.ListCreateAPIView):
 #     permission_classes = [IsAuthenticated] 
@@ -256,12 +245,6 @@ def checkout(request):
 #         except Exception:
 #             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class PaymentListView(generics.ListAPIView):
-    serializer_class = PaymentSerializer
-
-    def get_queryset(self):
-        return Payment.objects.all()
-
 class MembershipFormList(generics.ListCreateAPIView):
     queryset = MembershipForm.objects.all()
     serializer_class = MembershipFormSerializer
@@ -270,13 +253,13 @@ class ContactList(generics.ListCreateAPIView):
     queryset = Contact.objects.all()
     serializer_class = ContactSerializer
 
-class StripeConfigView(APIView):
+class BraintreeConfigView(APIView):
     """
     StripeConfigView is the API of configs resource, and
     responsible to handle the requests of /config/ endpoint.
     """
     def get(self, request, format=None):
         config = {
-            "publishable_key": str(settings.STRIPE_TEST_PUBLIC_KEY)
+            "publishable_key": str(settings.BRAINTREE_PUBLIC_KEY)
         }
         return Response(config)

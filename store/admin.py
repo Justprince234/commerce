@@ -6,7 +6,6 @@ from .models import (
     Product, 
     Cart, 
     Order,
-    Payment,
     MembershipForm,
     Contact,
     UserProfile,
@@ -80,19 +79,12 @@ admin.site.register(Cart, CartAdmin)
 
 class OrderAdmin(admin.ModelAdmin):
 
-    list_display = ('user', 'shipping_address', 'country', 'ordered')
+    list_display = ('user','first_name', 'last_name','shipping_address', 'country', 'paid')
     list_display_links = ('user',)
     search_fields = ('user',)
     list_per_page = 25
 
 admin.site.register(Order, OrderAdmin)
-
-class PaymentAdmin(admin.ModelAdmin):
-
-    list_display = ('id', 'user', 'stripe_charge_id', 'amount')
-    list_per_page = 25
-
-admin.site.register(Payment, PaymentAdmin)
 
 class MembershipFormAdmin(admin.ModelAdmin):
     

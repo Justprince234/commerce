@@ -12,12 +12,9 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import cloudinary
 import cloudinary_storage
 
-import stripe
-
-import paypalrestsdk
-
 import environ
 import os
+import braintree
 
 
 from pathlib import Path
@@ -135,9 +132,21 @@ CLOUDINARY_STORAGE = {
 #     "client_id": env("PAYPAL_CLIENT_ID"),
 #     "client_secret": env("PAYPAL_CLIENT_SECRET")})
 
-# Stripe
-STRIPE_TEST_PUBLIC_KEY='pk_test_51KB2ClJLScrUOnzdOxYCALzuNDJa1b4WxzXRPyzXgESjxH5ygyuHtZhFZlKnfOkttDmqPlwJdvAU9qPjODAmha5700n4nY6acS'
-STRIPE_TEST_SECRET_KEY = env('STRIPE_TEST_SECRET_KEY')
+# Braintree
+# BRAINTREE_MERCHANT_ID=env("BRAINTREE_MERCHANT_ID")
+# BRAINTREE_PUBLIC_KEY=env("BRAINTREE_PUBLIC_KEY")
+# BRAINTREE_PRIVATE_KEY=env("BRAINTREE_PRIVATE_KEY")
+
+BRAINTREE_MERCHANT_ID="x8k6mngqj2qz555h"
+BRAINTREE_PUBLIC_KEY="6gq39qddvjrjrq48"
+BRAINTREE_PRIVATE_KEY="cc8cd5722f350136437264ff0bf48338"
+
+BRAINTREE_CONF = braintree.Configuration(
+braintree.Environment.Sandbox,
+BRAINTREE_MERCHANT_ID,
+BRAINTREE_PUBLIC_KEY,
+BRAINTREE_PRIVATE_KEY
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators

@@ -106,15 +106,16 @@ class Cart(models.Model):
 
 class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    first_name = models.CharField(max_length=50, blank=True, null=True)
+    last_name = models.CharField(max_length=50, blank=True, null=True)
     products = models.ManyToManyField(Cart)
-    ordered = models.BooleanField(default=False)
+    paid = models.BooleanField(default=False)
     phone = models.CharField(max_length=20, blank=True, null=True)
     gender = models.CharField(choices=SEX,default="G", max_length=1, blank=True, null=True)
     shipping_address = models.CharField(max_length=100, blank=True, null=True)
     country = CountryField(multiple=False, blank_label='(select country)', default="US")
     zip = models.CharField(max_length=100, blank=True, null=True)
-    stripe_charge_id = models.CharField(max_length=100, blank=True, null=True)
-    payment = models.ForeignKey('Payment', on_delete=models.SET_NULL, blank=True, null=True)
+    braintree_charge_id = models.CharField(max_length=100, blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -128,18 +129,6 @@ class Order(models.Model):
         for order_product in self.products.all():
             total += order_product.get_final_price()
         return total
-
-class Payment(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True)
-    stripe_charge_id = models.CharField(max_length=100)
-    amount = models.FloatField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ('-timestamp',)
-
-    def __str__(self):
-        return str(self.stripe_customer_id)
     
 class MembershipForm(models.Model):
     country = CountryField(multiple=False, blank_label='(select country)')
