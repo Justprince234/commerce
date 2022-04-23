@@ -25,7 +25,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError, PermissionDenied, NotAcceptable
 from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponse,JsonResponse
-from rest_framework.authentication import SessionAuthentication
+from django.views.decorators.http import require_http_methods
 
 # Braintree
 import braintree
@@ -129,11 +129,25 @@ class CartView(generics.ListCreateAPIView):
     
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#Checkout
+@require_http_methods(['GET'])
+def get_braintree_client_token(request):
+    """
+    Generate and return client token.
+    """
+    try:
+        client_token = braintree.ClientToken.generate()
+    except ValueError as e:
+        return JsonResponse({"error": e.message}, status=500)
+    return JsonResponse({"token": client_token})
 
+#Checkout
 class Checkout(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        queryset = Order.objects.filter(user=self.request.user)
+        return queryset
 
     def post(self, request, *args, **kwargs):
         nonce = request.POST.get('payment_method_nonce', None)
@@ -144,6 +158,8 @@ class Checkout(generics.ListCreateAPIView):
         print(total)
         # amount = int(total* 100)
         try:
+            # generate token
+            client_token = gateway.client_token.generate()
             # charge the customer because we cannot charge the token more than once
             result = gateway.transaction.sale({'amount': total, 'payment_method_nonce': nonce, 'options': {'submit_for_settlement': True}})
 
@@ -154,9 +170,9 @@ class Checkout(generics.ListCreateAPIView):
                 orders.braintree_charge_id = result.transaction.id
                 orders.save()
 
-                serializer.save(user=request.user, total=total)
+                serializer.save(user=request.user, total=total) 
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response({"token": client_token}, serializer.data, status=status.HTTP_201_CREATED)
             
         except Exception:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
