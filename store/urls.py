@@ -32,5 +32,5 @@ urlpatterns = [
     path('contactlist/', views.ContactList.as_view()),
     # path('cart-item/', CartView.as_view(), name='cart-item'),
     # path('carts/', views.ListCart.as_view(), name='carts'),
-    path('checkout/', views.checkout, name='checkout')
+    path('checkout/', views.Checkout.as_view(), name='checkout')
 ]

@@ -101,33 +101,65 @@ class CartView(generics.ListCreateAPIView):
         return Response(data)
 
 # Cart
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def checkout(request):
-    serializer = OrderSerializer(data=request.data)
+# @api_view(['POST'])
+# @permission_classes([permissions.IsAuthenticated])
+# def checkout(request):
+#     serializer = OrderSerializer(data=request.data)
 
-    if serializer.is_valid():
+#     if serializer.is_valid():
+#         nonce = request.POST.get('payment_method_nonce', None)
+#         paid_amount = sum(item.get('quantity') * item.get('product').price for item in serializer.validated_data['products'])
+
+#         try:
+#             result = gateway.transaction.sale({'amount': paid_amount, 'payment_method_nonce': nonce, 'options': {'submit_for_settlement': True}})
+
+#             if result.is_success:
+#                 # mark the order as paid
+#                 order = Order()
+#                 order.paid = True
+#                 # store the unique transaction id
+#                 order.braintree_charge_id = result.transaction.id
+#                 order.save()
+
+#             serializer.save(user=request.user, paid_amount=paid_amount)
+
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         except Exception:
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#Checkout
+
+class Checkout(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderSerializer
+
+    def post(self, request, *args, **kwargs):
         nonce = request.POST.get('payment_method_nonce', None)
-        paid_amount = sum(item.get('quantity') * item.get('product').price for item in serializer.validated_data['products'])
-
+        serializer = OrderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        orders =Order.objects.filter(user=request.user, paid=False)
+        total = orders.get_total_price()
+        print(total)
+        # amount = int(total* 100)
         try:
-            result = gateway.transaction.sale({'amount': paid_amount, 'payment_method_nonce': nonce, 'options': {'submit_for_settlement': True}})
+            # charge the customer because we cannot charge the token more than once
+            result = gateway.transaction.sale({'amount': total, 'payment_method_nonce': nonce, 'options': {'submit_for_settlement': True}})
 
             if result.is_success:
                 # mark the order as paid
-                order = Order()
-                order.paid = True
+                orders.paid = True
                 # store the unique transaction id
-                order.braintree_charge_id = result.transaction.id
-                order.save()
+                orders.braintree_charge_id = result.transaction.id
+                orders.save()
 
-            serializer.save(user=request.user, paid_amount=paid_amount)
+                serializer.save(user=request.user, total=total)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
         except Exception:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class ListCart(generics.ListCreateAPIView):
 #     permission_classes = (permissions.IsAuthenticated,)
@@ -141,7 +173,7 @@ def checkout(request):
 
 # Order
 class OrderDetailView(APIView):
-    """List all of the products in the Products table."""
+    """List all of the order in the order table."""
     def get(self, request, format=None):
         orders = Order.objects.filter(user=request.user)
         serializer = OrderSerializer(orders, many=True)
@@ -192,59 +224,6 @@ class OrderItemDeleteView(generics.DestroyAPIView):
     queryset = Cart.objects.all()
     
 
-#Checkout
-
-
-# class PaymentView(generics.ListCreateAPIView):
-#     permission_classes = [IsAuthenticated] 
-#     queryset = Order.objects.none
-#     serializer_class = OrderSerializer
-
-#     def get_queryset(self):
-#         queryset = Order.objects.filter(user=self.request.user, ordered=False)
-#         return queryset
-
-#     def post(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
-#         serializer.is_valid(raise_exception=True)
-#         self.perform_create(serializer)
-#         orders =Order.objects.filter(user=request.user, ordered=False)
-#         output_serializer = OrderSerializer(orders, many=True)
-#         # data = output_serializer.data[:]
-#         stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
-#         total = orders.get_total_price()
-#         amount = int(total* 100)
-#         try:
-#             # charge the customer because we cannot charge the token more than once
-#             charge = stripe.Charge.create(
-#                 amount=amount,  # cents
-#                 description='Charge from Direshop777',
-#                 currency='usd',
-#                 source=serializer.validated_data['stripe_charge_id']
-#             )
-            
-#             # create the payment
-#             payment = Payment()
-#             payment.stripe_charge_id = charge['id']
-#             payment.user = self.request.user
-#             payment.amount = orders.get_total_price()
-#             payment.save()
-
-#             # assign the payment to the order
-#             order_items = orders.products.all()
-#             order_items.update(ordered=True)
-#             for item in order_items:
-#                 item.save()
-
-#             orders.ordered = True
-#             orders.payment = payment
-#             orders.save()
-
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-#         except Exception:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class MembershipFormList(generics.ListCreateAPIView):
     queryset = MembershipForm.objects.all()
     serializer_class = MembershipFormSerializer
@@ -255,7 +234,7 @@ class ContactList(generics.ListCreateAPIView):
 
 class BraintreeConfigView(APIView):
     """
-    StripeConfigView is the API of configs resource, and
+    BraintreeConfigView is the API of configs resource, and
     responsible to handle the requests of /config/ endpoint.
     """
     def get(self, request, format=None):
