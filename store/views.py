@@ -100,42 +100,13 @@ class CartView(generics.ListCreateAPIView):
         order.products.add(products)
         return Response(data)
 
-# Cart
-# @api_view(['POST'])
-# @permission_classes([permissions.IsAuthenticated])
-# def checkout(request):
-#     serializer = OrderSerializer(data=request.data)
-
-#     if serializer.is_valid():
-#         nonce = request.POST.get('payment_method_nonce', None)
-#         paid_amount = sum(item.get('quantity') * item.get('product').price for item in serializer.validated_data['products'])
-
-#         try:
-#             result = gateway.transaction.sale({'amount': paid_amount, 'payment_method_nonce': nonce, 'options': {'submit_for_settlement': True}})
-
-#             if result.is_success:
-#                 # mark the order as paid
-#                 order = Order()
-#                 order.paid = True
-#                 # store the unique transaction id
-#                 order.braintree_charge_id = result.transaction.id
-#                 order.save()
-
-#             serializer.save(user=request.user, paid_amount=paid_amount)
-
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         except Exception:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@require_http_methods(['GET'])
+@api_view(['GET'])
 def get_braintree_client_token(request):
     """
     Generate and return client token.
     """
     try:
-        client_token = braintree.ClientToken.generate()
+        client_token = gateway.client_token.generate()
     except ValueError as e:
         return JsonResponse({"error": e.message}, status=500)
     return JsonResponse({"token": client_token})
@@ -156,10 +127,7 @@ class Checkout(generics.ListCreateAPIView):
         orders =Order.objects.filter(user=request.user, paid=False)
         for items in orders:
             total = items.get_total_price()
-        # amount = int(total* 100)
         try:
-            # generate token
-            client_token = gateway.client_token.generate()
             # charge the customer because we cannot charge the token more than once
             result = gateway.transaction.sale({'amount': str(total), 'payment_method_nonce': nonce, "descriptor": {"name": "DIRESHOP777"}, 'options': {"paypal": {"description": "DIRESHOP777"}, 'submit_for_settlement': True}})
 
@@ -169,11 +137,8 @@ class Checkout(generics.ListCreateAPIView):
                 # store the unique transaction id
                 orders.braintree_charge_id = result.transaction.id
                 orders.save()
-
-                serializer.save(user=request.user, total=total) 
-
-            return Response({"token": client_token}, serializer.data, status=status.HTTP_201_CREATED)
-            
+                serializer.save(user=request.user) 
+            return Response(serializer.data, status=status.HTTP_201_CREATED)     
         except Exception:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
