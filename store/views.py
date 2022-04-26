@@ -151,10 +151,11 @@ class Checkout(generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         nonce = request.POST.get('payment_method_nonce', None)
-        serializer = OrderSerializer(data=request.data)
+        serializer = OrderSerializer(context={'request': request}, data=request.data)
         serializer.is_valid(raise_exception=True)
         orders =Order.objects.filter(user=request.user, paid=False)
-        total = orders.get_total_price()
+        for items in orders:
+            total = items.get_total_price()
         # amount = int(total* 100)
         try:
             # generate token
