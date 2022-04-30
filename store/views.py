@@ -223,3 +223,14 @@ class BraintreeConfigView(APIView):
             "publishable_key": str(settings.BRAINTREE_PUBLIC_KEY)
         }
         return Response(config)
+
+class BraintreeTokenizationView(APIView):
+    """
+    BraintreeTokenizationView is the API of configs resource, and
+    responsible to handle the requests of Tokenization endpoint.
+    """
+    def get(self, request, format=None):
+        config = {
+            "Tokenization_Key": "sandbox_s96mdk2n_x8k6mngqj2qz555h"
+        }
+        return Response(config)
