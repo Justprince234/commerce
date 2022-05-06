@@ -1,3 +1,4 @@
+from email.policy import default
 from django.db import models
 from django.db.models import fields
 from rest_framework import serializers
@@ -59,6 +60,7 @@ class OrderSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     products = serializers.PrimaryKeyRelatedField(queryset=Cart.objects.all(), many=True)
     total = serializers.SerializerMethodField()
+    payment_method_nonce = serializers.CharField(default=None)
 
     class Meta:
         model = Order

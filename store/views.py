@@ -26,6 +26,7 @@ from rest_framework.exceptions import ValidationError, PermissionDenied, NotAcce
 from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponse,JsonResponse
 from django.views.decorators.http import require_http_methods
+from rest_framework import serializers
 
 # Braintree
 import braintree
@@ -116,14 +117,15 @@ class Checkout(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderSerializer
 
+
     def get_queryset(self):
         queryset = Order.objects.filter(user=self.request.user)
         return queryset
 
     def post(self, request, *args, **kwargs):
-        nonce = request.POST.get('payment_method_nonce', None)
         serializer = OrderSerializer(context={'request': request}, data=request.data)
         serializer.is_valid(raise_exception=True)
+        nonce = serializer.validated_data["payment_method_nonce"]
         orders =Order.objects.filter(user=request.user, paid=False)
         for items in orders:
             total = items.get_total_price()
