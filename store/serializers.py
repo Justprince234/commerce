@@ -34,7 +34,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
-    product = serializers.SerializerMethodField(read_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
     total_product_price = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
 
@@ -60,7 +60,7 @@ class OrderSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
     products = serializers.PrimaryKeyRelatedField(queryset=Cart.objects.all(), many=True)
     total = serializers.SerializerMethodField()
-    payment_method_nonce = serializers.CharField(default=None)
+    # payment_method_nonce = serializers.CharField(default=None)
 
     class Meta:
         model = Order

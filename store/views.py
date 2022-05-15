@@ -6,6 +6,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
+from config.settings import BRAINTREE_CONF
 
 from .models import Category, Product, Cart, Order, MembershipForm, Contact, UserProfile
 from store.serializers import CategorySerializer, ProductSerializer, CartSerializer, OrderSerializer, MembershipFormSerializer, ContactSerializer
@@ -32,7 +33,7 @@ from rest_framework import serializers
 import braintree
 
 # instantiate Braintree payment gateway
-gateway = braintree.BraintreeGateway(settings.BRAINTREE_CONF)
+gateway = braintree.BraintreeGateway(BRAINTREE_CONF)
 
 
 # Create your views here.
@@ -125,13 +126,19 @@ class Checkout(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = OrderSerializer(context={'request': request}, data=request.data)
         serializer.is_valid(raise_exception=True)
-        nonce = serializer.validated_data["payment_method_nonce"]
+        nonce = request.data.get("payment_method_nonce")
         orders =Order.objects.filter(user=request.user, paid=False)
         for items in orders:
             total = items.get_total_price()
         try:
             # charge the customer because we cannot charge the token more than once
-            result = gateway.transaction.sale({'amount': str(total), 'payment_method_nonce': nonce, "descriptor": {"name": "DIRESHOP777"}, 'options': {"paypal": {"description": "DIRESHOP777"}, 'submit_for_settlement': True}})
+            result = gateway.transaction.sale({
+                'amount': str(total),
+                'payment_method_nonce': nonce,
+                'descriptor': {'name': 'DIRESHOP777'},
+                'options': {'paypal': {'description': 'DIRESHOP777'},
+                'submit_for_settlement': True}
+                })
 
             if result.is_success:
                 # mark the order as paid
@@ -140,9 +147,11 @@ class Checkout(generics.ListCreateAPIView):
                 orders.braintree_charge_id = result.transaction.id
                 orders.save()
                 serializer.save(user=request.user) 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)     
+            return JsonResponse(serializer.data, status =201)
+            # Response(serializer.data, status=status.HTTP_201_CREATED)     
         except Exception:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(serializer.errors,status = 400)
+        #     # Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class ListCart(generics.ListCreateAPIView):
 #     permission_classes = (permissions.IsAuthenticated,)
