@@ -147,7 +147,7 @@ class Checkout(generics.ListCreateAPIView):
                 orders.paid = True
                 # store the unique transaction id
                 orders.braintree_charge_id = result.transaction.id
-                orders.save(user=request.user)
+                orders.save()
             serializer.save(user=request.user) 
             return JsonResponse(serializer.data, status =201)
             # Response(serializer.data, status=status.HTTP_201_CREATED)     
