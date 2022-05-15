@@ -140,13 +140,15 @@ class Checkout(generics.ListCreateAPIView):
                 'submit_for_settlement': True}
                 })
 
+                
+
             if result.is_success:
                 # mark the order as paid
                 orders.paid = True
                 # store the unique transaction id
                 orders.braintree_charge_id = result.transaction.id
-                orders.save()
-                serializer.save(user=request.user) 
+                orders.save(user=request.user)
+            serializer.save(user=request.user) 
             return JsonResponse(serializer.data, status =201)
             # Response(serializer.data, status=status.HTTP_201_CREATED)     
         except Exception:
