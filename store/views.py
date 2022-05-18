@@ -9,7 +9,7 @@ from django.conf import settings
 from config.settings import BRAINTREE_CONF
 
 from .models import Category, Product, Cart, Order, MembershipForm, Contact, UserProfile
-from store.serializers import CategorySerializer, ProductSerializer, CartSerializer, OrderSerializer, MembershipFormSerializer, ContactSerializer
+from store.serializers import CategorySerializer, ProductSerializer, CartPostSerializer, OrderSerializer, MembershipFormSerializer, ContactSerializer, CartGetSerializer
 
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -60,7 +60,7 @@ class DetailCategory(generics.RetrieveUpdateDestroyAPIView):
 
 class DetailCart(generics.RetrieveUpdateDestroyAPIView):
     queryset = Cart.objects.all()
-    serializer_class = CartSerializer 
+    serializer_class = CartPostSerializer 
 
 @api_view(['POST'])
 def search(request):
@@ -79,21 +79,25 @@ class CountryListView(APIView):
         return Response(countries, status=HTTP_200_OK)
 
 # Add to cart
-class CartView(generics.ListCreateAPIView):
+class CartGetView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated] 
     queryset = Cart.objects.none()
-    serializer_class = CartSerializer
+    serializer_class = CartGetSerializer
 
     def get_queryset(self):
         queryset = Cart.objects.filter(user=self.request.user)
         return queryset
 
+class CartView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated] 
+    queryset = Cart.objects.none()
+    serializer_class = CartPostSerializer
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         results =Cart.objects.filter(user=request.user)
-        output_serializer = CartSerializer(results, many=True)
+        output_serializer = CartPostSerializer(results, many=True)
         data = output_serializer.data[:]
         order = Order.objects.create(user=request.user)
         for items in data:
