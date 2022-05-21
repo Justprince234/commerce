@@ -9,19 +9,27 @@ from django.db.models.signals import post_save
 from django.conf import settings
 from mptt.models import MPTTModel
 from mptt.fields import TreeForeignKey
+from config.settings import BRAINTREE_CONF
+
+import braintree
+from braintree.exceptions.authentication_error import AuthenticationError
+
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
+
+gateway = braintree.BraintreeGateway(BRAINTREE_CONF)
 
 # Create your models here.
+try:
+    gateway
 
-SEX = (
-    ('G', 'Select gender'),
-    ('M', 'Male'),
-    ('F', 'Female'),
-)
+    braintree_authentication = True
+except AuthenticationError as error:
+    braintree_authentication = False
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    stripe_customer_id = models.CharField(max_length=100, blank=True, null=True)
-    one_click_purchasing = models.BooleanField(default=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    braintree_id = models.CharField(max_length=120, null=True, blank=True)
 
     def __str__(self):
         return str(self.user)
@@ -106,16 +114,12 @@ class Cart(models.Model):
 
 class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    first_name = models.CharField(max_length=50, blank=True, null=True)
-    last_name = models.CharField(max_length=50, blank=True, null=True)
     products = models.ManyToManyField(Cart)
     paid = models.BooleanField(default=False)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    gender = models.CharField(choices=SEX,default="G", max_length=1, blank=True, null=True)
     shipping_address = models.CharField(max_length=100, blank=True, null=True)
     country = CountryField(multiple=False, blank_label='(select country)', default="US")
     zip = models.CharField(max_length=100, blank=True, null=True)
-    braintree_charge_id = models.CharField(max_length=100, blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -129,7 +133,12 @@ class Order(models.Model):
         for order_product in self.products.all():
             total += order_product.get_final_price()
         return total
-    
+SEX = (
+    ('G', 'Select gender'),
+    ('M', 'Male'),
+    ('F', 'Female'),
+)
+
 class MembershipForm(models.Model):
     country = CountryField(multiple=False, blank_label='(select country)')
     email = models.EmailField(verbose_name='email', max_length=60, unique=True)

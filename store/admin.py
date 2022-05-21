@@ -79,7 +79,7 @@ admin.site.register(Cart, CartAdmin)
 
 class OrderAdmin(admin.ModelAdmin):
 
-    list_display = ('user','first_name', 'last_name','shipping_address', 'country', 'paid')
+    list_display = ('user', 'shipping_address', 'country', 'paid')
     list_display_links = ('user',)
     search_fields = ('user',)
     list_per_page = 25

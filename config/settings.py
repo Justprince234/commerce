@@ -137,15 +137,15 @@ CLOUDINARY_STORAGE = {
 # BRAINTREE_PUBLIC_KEY=env("BRAINTREE_PUBLIC_KEY")
 # BRAINTREE_PRIVATE_KEY=env("BRAINTREE_PRIVATE_KEY")
 
-BRAINTREE_MERCHANT_ID="x8k6mngqj2qz555h"
-BRAINTREE_PUBLIC_KEY="6gq39qddvjrjrq48"
-BRAINTREE_PRIVATE_KEY="cc8cd5722f350136437264ff0bf48338"
+merchant_id="x8k6mngqj2qz555h"
+public_key="6gq39qddvjrjrq48"
+private_key="cc8cd5722f350136437264ff0bf48338"
 
 BRAINTREE_CONF = braintree.Configuration.configure(
 braintree.Environment.Sandbox,
-BRAINTREE_MERCHANT_ID,
-BRAINTREE_PUBLIC_KEY,
-BRAINTREE_PRIVATE_KEY
+merchant_id,
+public_key,
+private_key
 )
 
 # Password validation

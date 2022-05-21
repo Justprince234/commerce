@@ -15,7 +15,7 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
 from django_countries import countries
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_406_NOT_ACCEPTABLE
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
 from rest_framework import status, authentication, permissions
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -106,16 +106,16 @@ class CartView(generics.ListCreateAPIView):
         order.products.add(products)
         return Response(data)
 
-@api_view(['GET'])
-def get_braintree_client_token(request):
-    """
-    Generate and return client token.
-    """
-    try:
-        client_token = gateway.client_token.generate()
-    except ValueError as e:
-        return JsonResponse({"error": e.message}, status=500)
-    return JsonResponse({"token": client_token})
+# @api_view(['GET'])
+# def get_braintree_client_token(request):
+#     """
+#     Generate and return client token.
+#     """
+#     try:
+#         client_token = gateway.client_token.generate()
+#     except ValueError as e:
+#         return JsonResponse({"error": e.message}, status=500)
+#     return JsonResponse({"token": client_token})
 
 #Checkout
 class Checkout(generics.ListCreateAPIView):
@@ -130,34 +130,43 @@ class Checkout(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = OrderSerializer(context={'request': request}, data=request.data)
         serializer.is_valid(raise_exception=True)
+        self.user = request.user
+        customer_kwargs = {
+            "first_name": self.user.first_name,
+            "last_name": self.user.surname,
+            "email": self.user.email,
+        }
+        customer_result = braintree.Customer.create(customer_kwargs)
+        customer_id = customer_result.customer.id
+        client_token = braintree.ClientToken.generate({
+                'customer_id': customer_id
+            })
         nonce = request.data.get("payment_method_nonce")
+        user_profile = UserProfile.objects.filter(user=request.user)
         orders =Order.objects.filter(user=request.user, paid=False)
         for items in orders:
             total = items.get_total_price()
         try:
             # charge the customer because we cannot charge the token more than once
             result = gateway.transaction.sale({
+                'customer_id': customer_id,
                 'amount': str(total),
                 'payment_method_nonce': nonce,
                 'descriptor': {'name': 'DIRESHOP777'},
-                'options': {'paypal': {'description': 'DIRESHOP777'},
-                'submit_for_settlement': True}
+                'options': {
+                    'submit_for_settlement': True,
+                    'store_in_vault_on_success': True
+                    }
                 })
-
-                
-
             if result.is_success:
-                # mark the order as paid
+                user_profile.braintree_id = customer_id
+                user_profile.save()
                 orders.paid = True
-                # store the unique transaction id
-                orders.braintree_charge_id = result.transaction.id
                 orders.save()
-            serializer.save(user=request.user) 
-            return JsonResponse(serializer.data, status =201)
-            # Response(serializer.data, status=status.HTTP_201_CREATED)     
+            serializer.save(user=request.user)
+            return JsonResponse({"serializer_data": serializer.data, "client_token": client_token}, status=status.HTTP_201_CREATED)  
         except Exception:
-            return JsonResponse(serializer.errors,status = 400)
-        #     # Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class ListCart(generics.ListCreateAPIView):
 #     permission_classes = (permissions.IsAuthenticated,)

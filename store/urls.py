@@ -22,7 +22,6 @@ urlpatterns = [
     path('carts/<int:pk>/', views.DetailCart.as_view(), name='cartdetail'),
 
     path('products/search/', views.search),
-    path('braintree-client/', views.get_braintree_client_token),
     path('countries/', CountryListView.as_view(), name='country-list'),
     path('order-summary/', OrderDetailView.as_view(), name='order-summary'),
     path('order-items/<pk>/delete/',
