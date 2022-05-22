@@ -1,6 +1,7 @@
 from django.urls import path
 from store import views
 from .views import (
+    BraintreeClientTokenView,
     CountryListView,
     OrderDetailView,
     OrderItemDeleteView,
@@ -28,6 +29,7 @@ urlpatterns = [
         OrderItemDeleteView.as_view(), name='order-item-delete'),
     path('update-quantity/',
         OrderQuantityUpdateView.as_view(), name='order-item-update-quantity'),
+    path('client-token/', BraintreeClientTokenView.as_view(), name='client-toke'),
     path('braintree-config/', BraintreeConfigView.as_view(), name='braintree-config'),
     path('tokenization-Key/', views.BraintreeTokenizationView.as_view(), name='tokenization-Key'),
     path('membershipform/', views.MembershipFormList.as_view()),

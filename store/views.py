@@ -106,16 +106,24 @@ class CartView(generics.ListCreateAPIView):
         order.products.add(products)
         return Response(data)
 
-# @api_view(['GET'])
-# def get_braintree_client_token(request):
-#     """
-#     Generate and return client token.
-#     """
-#     try:
-#         client_token = gateway.client_token.generate()
-#     except ValueError as e:
-#         return JsonResponse({"error": e.message}, status=500)
-#     return JsonResponse({"token": client_token})
+class BraintreeClientTokenView(APIView):
+    """Generate and return client token."""
+    permission_classes = [IsAuthenticated]
+    def get(self, request, format=None):
+        self.user = request.user
+        customer_kwargs = {
+            "first_name": self.user.first_name,
+            "last_name": self.user.surname,
+            "email": self.user.email,
+        }
+        customer_result = braintree.Customer.create(customer_kwargs)
+        customer_id = customer_result.customer.id
+        client_token = braintree.ClientToken.generate({
+                'customer_id': customer_id
+            })
+        return Response(client_token)
+
+
 
 #Checkout
 class Checkout(generics.ListCreateAPIView):
