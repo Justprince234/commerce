@@ -156,7 +156,7 @@ class Checkout(generics.ListCreateAPIView):
             # charge the customer because we cannot charge the token more than once
             result = braintree.Transaction.sale({
                 'customer_id': customer_id,
-                'amount': str(total),
+                'amount': f'{total:.2f}',
                 'payment_method_nonce': nonce,
                 'descriptor': {'name': 'DIRESHOP777'},
                 'options': {
