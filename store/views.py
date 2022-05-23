@@ -86,6 +86,7 @@ class CartGetView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = Cart.objects.filter(user=self.request.user)
+        print(queryset)
         return queryset
 
 class CartView(generics.ListCreateAPIView):
@@ -146,9 +147,6 @@ class Checkout(generics.ListCreateAPIView):
         }
         customer_result = braintree.Customer.create(customer_kwargs)
         customer_id = customer_result.customer.id
-        client_token = braintree.ClientToken.generate({
-                'customer_id': customer_id
-            })
         nonce = request.data.get("payment_method_nonce")
         user_profile = UserProfile.objects.filter(user=request.user)
         orders =Order.objects.filter(user=request.user, paid=False)
@@ -156,7 +154,7 @@ class Checkout(generics.ListCreateAPIView):
             total = items.get_total_price()
         try:
             # charge the customer because we cannot charge the token more than once
-            result = gateway.transaction.sale({
+            result = braintree.Transaction.sale({
                 'customer_id': customer_id,
                 'amount': str(total),
                 'payment_method_nonce': nonce,
@@ -167,12 +165,12 @@ class Checkout(generics.ListCreateAPIView):
                     }
                 })
             if result.is_success:
-                user_profile.braintree_id = customer_id
+                user_profile.braintree_id = result.transaction.id
                 user_profile.save()
                 orders.paid = True
                 orders.save()
             serializer.save(user=request.user)
-            return JsonResponse({"serializer_data": serializer.data, "client_token": client_token}, status=status.HTTP_201_CREATED)  
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)  
         except Exception:
             return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

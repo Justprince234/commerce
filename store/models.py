@@ -9,23 +9,7 @@ from django.db.models.signals import post_save
 from django.conf import settings
 from mptt.models import MPTTModel
 from mptt.fields import TreeForeignKey
-from config.settings import BRAINTREE_CONF
 
-import braintree
-from braintree.exceptions.authentication_error import AuthenticationError
-
-from django.db.models.signals import pre_save, post_save
-from django.dispatch import receiver
-
-gateway = braintree.BraintreeGateway(BRAINTREE_CONF)
-
-# Create your models here.
-try:
-    gateway
-
-    braintree_authentication = True
-except AuthenticationError as error:
-    braintree_authentication = False
 
 class UserProfile(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
