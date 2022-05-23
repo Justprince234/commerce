@@ -170,7 +170,7 @@ class Checkout(generics.ListCreateAPIView):
                 orders.paid = True
                 orders.save()
             serializer.save(user=request.user)
-            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)  
+            return JsonResponse({"serializer": serializer.data, "nonce":nonce}, status=status.HTTP_201_CREATED)  
         except Exception:
             return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
