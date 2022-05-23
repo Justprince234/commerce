@@ -187,7 +187,7 @@ class Checkout(generics.ListCreateAPIView):
 class OrderDetailView(APIView):
     """List all of the order in the order table."""
     def get(self, request, format=None):
-        orders = Order.objects.filter(user=request.user,  paid=False)
+        orders = Order.objects.filter(user=request.user)
         for items in orders:
             total = items.get_total_price()
             totals = f'{total:.2f}'
