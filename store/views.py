@@ -6,7 +6,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
-from config.settings import BRAINTREE_CONF
 
 from .models import Category, Product, Cart, Order, MembershipForm, Contact, UserProfile
 from store.serializers import CategorySerializer, ProductSerializer, CartPostSerializer, OrderSerializer, MembershipFormSerializer, ContactSerializer, CartGetSerializer
@@ -33,8 +32,7 @@ from rest_framework import serializers
 import braintree
 
 # instantiate Braintree payment gateway
-gateway = braintree.BraintreeGateway(BRAINTREE_CONF)
-
+gateway = braintree.BraintreeGateway(settings.BRAINTREE_CONF)
 
 # Create your views here.
 class ListProduct(generics.ListCreateAPIView):    
@@ -152,11 +150,12 @@ class Checkout(generics.ListCreateAPIView):
         orders =Order.objects.filter(user=request.user, paid=False)
         for items in orders:
             total = items.get_total_price()
+            totals = f'{total:.2f}'
         try:
             # charge the customer because we cannot charge the token more than once
-            result = braintree.Transaction.sale({
+            result = gateway.transaction.sale({
                 'customer_id': customer_id,
-                'amount': f'{total:.2f}',
+                'amount': totals,
                 'payment_method_nonce': nonce,
                 'descriptor': {'name': 'DIRESHOP777'},
                 'options': {
@@ -188,9 +187,12 @@ class Checkout(generics.ListCreateAPIView):
 class OrderDetailView(APIView):
     """List all of the order in the order table."""
     def get(self, request, format=None):
-        orders = Order.objects.filter(user=request.user)
+        orders = Order.objects.filter(user=request.user,  paid=False)
+        for items in orders:
+            total = items.get_total_price()
+            totals = f'{total:.2f}'
         serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data, status=HTTP_200_OK)
+        return Response({"serializer":serializer.data, "total":totals}, status=HTTP_200_OK)
 
 # class OrderDetailView(generics.RetrieveAPIView):
 #     serializer_class = OrderSerializer
