@@ -141,11 +141,11 @@ merchant_id="x8k6mngqj2qz555h"
 public_key="6gq39qddvjrjrq48"
 private_key="cc8cd5722f350136437264ff0bf48338"
 
-BRAINTREE_CONF = braintree.Configuration(
-braintree.Environment.Sandbox,
-merchant_id=merchant_id,
-public_key=public_key,
-private_key=private_key
+BRAINTREE_CONF = braintree.Configuration.configure(
+    braintree.Environment.Sandbox,
+    merchant_id=merchant_id,
+    public_key=public_key,
+    private_key=private_key
 )
 
 # Password validation
